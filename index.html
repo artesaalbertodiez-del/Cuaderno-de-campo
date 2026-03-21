@@ -1,0 +1,1157 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Mortalidad de Fauna — ENGIE</title>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBnmL9E_YOvPD-4N_jvsqPrl1VlBcuErO8"></script>
+<style>
+:root {
+  --verde: #2e7d32;
+  --verde-claro: #4caf50;
+  --verde-bg: #e8f5e9;
+  --azul: #1565c0;
+  --azul-claro: #e3f2fd;
+  --gris: #546e7a;
+  --gris-claro: #eceff1;
+  --borde: #b0bec5;
+  --texto: #212121;
+  --texto2: #546e7a;
+  --rojo: #c62828;
+  --blanco: #ffffff;
+  --sombra: 0 2px 8px rgba(0,0,0,0.12);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 14px; background: #f5f5f5; color: var(--texto); min-height: 100vh; }
+
+.cabecera {
+  background: var(--verde); color: white; padding: 12px 16px;
+  display: flex; align-items: center; gap: 12px;
+  position: sticky; top: 0; z-index: 300; box-shadow: var(--sombra);
+}
+.cabecera h1 { font-size: 16px; font-weight: 600; }
+.cabecera p { font-size: 11px; opacity: .85; }
+.cab-acciones { margin-left: auto; display: flex; gap: 8px; }
+
+#pantalla-menu { padding: 24px 16px; max-width: 500px; margin: 0 auto; }
+#pantalla-menu h2 { font-size: 13px; color: var(--texto2); margin-bottom: 16px; text-transform: uppercase; letter-spacing: .05em; }
+.menu-btn {
+  display: flex; align-items: center; gap: 16px;
+  background: white; border: 1px solid var(--borde); border-radius: 10px;
+  padding: 18px 16px; margin-bottom: 12px; cursor: pointer;
+  text-align: left; width: 100%; box-shadow: var(--sombra); transition: all .15s;
+}
+.menu-btn:hover { border-color: var(--verde); background: var(--verde-bg); }
+.menu-btn-ico { font-size: 28px; }
+.menu-btn-txt strong { display: block; font-size: 15px; margin-bottom: 2px; }
+.menu-btn-txt span { font-size: 12px; color: var(--texto2); }
+
+#pantalla-form { display: none; }
+.contenido { max-width: 640px; margin: 0 auto; padding: 16px; padding-bottom: 100px; }
+
+.seccion { background: white; border: 1px solid var(--borde); border-radius: 10px; margin-bottom: 14px; overflow: hidden; box-shadow: var(--sombra); }
+.sec-cab { background: var(--verde); color: white; padding: 10px 14px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; }
+.sec-cab.gris { background: var(--gris); }
+.sec-cab.azul { background: var(--azul); }
+.sec-body { padding: 14px; }
+
+.fila { display: grid; gap: 10px; margin-bottom: 10px; }
+.fila:last-child { margin-bottom: 0; }
+.f2 { grid-template-columns: 1fr 1fr; }
+.f3 { grid-template-columns: 1fr 1fr 1fr; }
+
+.campo { display: flex; flex-direction: column; gap: 4px; }
+.campo label { font-size: 11px; font-weight: 600; color: var(--texto2); text-transform: uppercase; letter-spacing: .04em; }
+.campo input, .campo select, .campo textarea {
+  border: 1px solid var(--borde); border-radius: 6px; padding: 8px 10px;
+  font-size: 14px; font-family: inherit; color: var(--texto); background: white;
+  outline: none; transition: border-color .2s; width: 100%;
+}
+.campo input:focus, .campo select:focus, .campo textarea:focus {
+  border-color: var(--verde); box-shadow: 0 0 0 2px rgba(46,125,50,.15);
+}
+.campo textarea { resize: vertical; min-height: 64px; }
+.readonly { background: #f5f5f5 !important; color: var(--texto2) !important; }
+
+.cadaver-card {
+  background: white; border: 1px solid var(--borde);
+  border-left: 4px solid var(--azul); border-radius: 8px;
+  margin-bottom: 12px; overflow: hidden; box-shadow: var(--sombra);
+}
+.cad-cab {
+  background: var(--azul-claro); padding: 10px 14px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.cad-num { font-weight: 700; font-size: 13px; color: var(--azul); }
+.cad-body { padding: 14px; }
+.subsec { font-size: 11px; font-weight: 700; color: var(--verde); text-transform: uppercase; letter-spacing: .06em; margin: 12px 0 8px; padding-bottom: 4px; border-bottom: 1px solid var(--borde); }
+.subsec:first-child { margin-top: 0; }
+
+.gps-fila { display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; align-items: end; margin-bottom: 8px; }
+.gps-badge {
+  display: inline-block; background: #e8f5e9; color: var(--verde);
+  border: 1px solid #a5d6a7; border-radius: 4px;
+  padding: 3px 8px; font-size: 11px; font-weight: 600; margin-top: 4px;
+}
+
+/* MAP */
+.mapa-wrap {
+  margin-top: 10px; border: 1px solid var(--borde); border-radius: 8px;
+  overflow: hidden; position: relative; height: 260px;
+}
+.mapa-hint { font-size: 11px; color: var(--texto2); margin-top: 4px; font-style: italic; }
+
+.fotos-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.foto-thumb {
+  position: relative; width: 76px; height: 76px;
+  border-radius: 6px; overflow: hidden; border: 1px solid var(--borde);
+}
+.foto-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.foto-del {
+  position: absolute; top: 2px; right: 2px;
+  background: rgba(0,0,0,.6); color: white;
+  border: none; border-radius: 3px; padding: 1px 5px; font-size: 11px; cursor: pointer;
+}
+
+.add-cad {
+  border: 2px dashed var(--borde); border-radius: 8px; padding: 16px;
+  text-align: center; color: var(--texto2); cursor: pointer;
+  font-size: 13px; background: white; transition: all .2s;
+}
+.add-cad:hover { border-color: var(--azul); color: var(--azul); background: var(--azul-claro); }
+
+.barra {
+  background: white; border-top: 1px solid var(--borde); padding: 12px 16px;
+  display: flex; gap: 8px; flex-wrap: wrap;
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 200;
+  box-shadow: 0 -2px 8px rgba(0,0,0,.1);
+}
+
+button {
+  font-family: inherit; font-size: 13px; border: none; border-radius: 6px;
+  cursor: pointer; padding: 8px 14px; display: inline-flex; align-items: center;
+  gap: 6px; transition: all .15s; font-weight: 500;
+}
+.btn-v { background: var(--verde); color: white; }
+.btn-v:hover { background: #1b5e20; }
+.btn-a { background: var(--azul); color: white; }
+.btn-a:hover { background: #0d47a1; }
+.btn-g { background: var(--gris-claro); color: var(--texto); border: 1px solid var(--borde); }
+.btn-g:hover { background: #cfd8dc; }
+.btn-r { background: white; color: var(--rojo); border: 1px solid var(--rojo); padding: 5px 10px; font-size: 12px; }
+.btn-r:hover { background: #ffebee; }
+.btn-n { background: #e65100; color: white; }
+.btn-n:hover { background: #bf360c; }
+.btn-sm { padding: 6px 10px; font-size: 12px; }
+
+input[type="file"] { display: none; }
+
+.inv-tabla { width: 100%; border-collapse: collapse; font-size: 12px; }
+.inv-tabla th { background: #e8f5e9; padding: 6px 8px; text-align: left; font-weight: 600; border: 1px solid var(--borde); font-size: 11px; }
+.inv-tabla td { padding: 6px 8px; border: 1px solid var(--borde); vertical-align: top; }
+.inv-vacio { text-align: center; color: var(--texto2); font-style: italic; padding: 12px; font-size: 13px; }
+
+.badge { background: white; color: var(--verde); border-radius: 10px; padding: 1px 7px; font-size: 11px; font-weight: 700; margin-left: 4px; }
+
+#cam-modal {
+  display: none; position: fixed; inset: 0; background: rgba(0,0,0,.92);
+  z-index: 500; align-items: center; justify-content: center; flex-direction: column; gap: 14px;
+}
+#cam-modal.abierto { display: flex; }
+#cam-video { width: min(420px,92vw); border-radius: 10px; border: 3px solid var(--verde-claro); }
+#cam-canvas { display: none; }
+
+#toast {
+  position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+  background: #323232; color: white; border-radius: 6px;
+  padding: 10px 18px; font-size: 13px; opacity: 0; transition: opacity .3s;
+  pointer-events: none; z-index: 999; white-space: nowrap;
+}
+#toast.vis { opacity: 1; }
+
+@media(max-width:500px) {
+  .f2, .f3 { grid-template-columns: 1fr; }
+  .gps-fila { grid-template-columns: 1fr 1fr; }
+  .gps-fila .btn-v { grid-column: span 2; }
+}
+</style>
+</head>
+<body>
+
+<div class="cabecera">
+  <div style="font-size:22px">🦅</div>
+  <div>
+    <h1>Mortalidad de Fauna</h1>
+    <p>ENGIE Wind Farms</p>
+  </div>
+  <div class="cab-acciones" id="cab-acc" style="display:none">
+    <button class="btn-g btn-sm" onclick="volverMenu()">← Menú</button>
+  </div>
+</div>
+
+<!-- MENÚ -->
+<div id="pantalla-menu">
+  <h2>Selecciona formulario</h2>
+  <button class="menu-btn" onclick="abrirForm()">
+    <div class="menu-btn-ico">🦜</div>
+    <div class="menu-btn-txt">
+      <strong>Registro de Mortandad</strong>
+      <span>Inventario de restos y fichas individuales por cadáver</span>
+    </div>
+  </button>
+  <button class="menu-btn" onclick="toast('Próximamente disponible')">
+    <div class="menu-btn-ico">📋</div>
+    <div class="menu-btn-txt">
+      <strong>Censo de Aves</strong>
+      <span>Próximamente</span>
+    </div>
+  </button>
+</div>
+
+<!-- FORMULARIO -->
+<div id="pantalla-form">
+<div class="contenido">
+
+  <!-- DATOS GENERALES -->
+  <div class="seccion">
+    <div class="sec-cab">Datos generales de la visita</div>
+    <div class="sec-body">
+      <div class="fila f2">
+        <div class="campo">
+          <label>Parque eólico</label>
+          <select id="parque" onchange="actualizarSubparque()">
+            <option value="">— Seleccionar —</option>
+            <option value="CE">Caramonte</option>
+            <option value="AL">Alentisque</option>
+            <option value="PA">Parideras</option>
+            <option value="CA">Carrascalejo</option>
+            <option value="GUI">El Guijo</option>
+          </select>
+        </div>
+        <div class="campo" id="campo-sub" style="display:none">
+          <label>Subparque</label>
+          <select id="subparque">
+            <option value="">—</option>
+            <option>Guijo I</option><option>Guijo II</option>
+          </select>
+        </div>
+      </div>
+      <div class="fila f2">
+        <div class="campo">
+          <label>Término municipal</label>
+          <input type="text" id="municipio" placeholder="Ej. Medinaceli">
+        </div>
+        <div class="campo">
+          <label>Periodo</label>
+          <select id="periodo">
+            <option value="">— Seleccionar —</option>
+            <option>Enero (1ª quincena)</option><option>Enero (2ª quincena)</option><option>Febrero (1ª quincena)</option><option>Febrero (2ª quincena)</option><option>Marzo (1ª quincena)</option><option>Marzo (2ª quincena)</option><option>Abril (1ª quincena)</option><option>Abril (2ª quincena)</option><option>Mayo (1ª quincena)</option><option>Mayo (2ª quincena)</option><option>Junio (1ª quincena)</option><option>Junio (2ª quincena)</option><option>Julio (1ª quincena)</option><option>Julio (2ª quincena)</option><option>Agosto (1ª quincena)</option><option>Agosto (2ª quincena)</option><option>Septiembre (1ª quincena)</option><option>Septiembre (2ª quincena)</option><option>Octubre (1ª quincena)</option><option>Octubre (2ª quincena)</option><option>Noviembre (1ª quincena)</option><option>Noviembre (2ª quincena)</option><option>Diciembre (1ª quincena)</option><option>Diciembre (2ª quincena)</option>
+          </select>
+        </div>
+      </div>
+      <div class="fila f2">
+        <div class="campo">
+          <label>Fecha de visita</label>
+          <input type="date" id="fecha">
+        </div>
+        <div class="campo">
+          <label>Observador</label>
+          <input type="text" id="observador" placeholder="Nombre del observador">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TIEMPO -->
+  <div class="seccion">
+    <div class="sec-cab gris">Tiempo atmosférico</div>
+    <div class="sec-body">
+      <div class="fila f2">
+        <div class="campo"><label>Temperatura</label>
+          <select id="temperatura"><option value="">—</option>
+            <option>Muy fría (&lt;0°C)</option><option>Fría (0-10°C)</option>
+            <option>Fresca (10-15°C)</option><option>Templada (15-20°C)</option>
+            <option>Cálida (20-30°C)</option><option>Muy cálida (&gt;30°C)</option>
+          </select>
+        </div>
+        <div class="campo"><label>Visibilidad</label>
+          <select id="visibilidad"><option value="">—</option>
+            <option>Buena</option><option>Regular</option><option>Mala</option>
+          </select>
+        </div>
+        <div class="campo"><label>Dirección del viento</label>
+          <select id="viento_dir"><option value="">—</option>
+            <option>Norte</option><option>Noreste</option><option>Este</option>
+            <option>Sureste</option><option>Sur</option><option>Suroeste</option>
+            <option>Oeste</option><option>Noroeste</option><option>Variable</option><option>Calma</option>
+          </select>
+        </div>
+        <div class="campo"><label>Velocidad del viento</label>
+          <select id="viento_vel"><option value="">—</option>
+            <option>Calma</option><option>Viento flojo</option>
+            <option>Viento medio</option><option>Viento fuerte</option><option>Vendaval</option>
+          </select>
+        </div>
+        <div class="campo"><label>Precipitación</label>
+          <select id="precipitacion"><option value="">—</option>
+            <option>Nula</option><option>Llovizna</option>
+            <option>Lluvia</option><option>Lluvia intensa</option><option>Nieve</option>
+          </select>
+        </div>
+        <div class="campo"><label>Nubosidad</label>
+          <select id="nubosidad"><option value="">—</option>
+            <option>Despejado</option><option>Poco nuboso</option>
+            <option>Nuboso</option><option>Cubierto</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- INVENTARIO -->
+  <div class="seccion">
+    <div class="sec-cab">Inventario de restos <span class="badge" id="badge">0</span></div>
+    <div style="overflow-x:auto">
+      <table class="inv-tabla">
+        <thead><tr><th>Nº Ref</th><th>Especie</th><th>Nº Aerog.</th><th>Observaciones</th></tr></thead>
+        <tbody id="inv-tbody"><tr><td colspan="4" class="inv-vacio">Sin cadáveres registrados</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- CADÁVERES -->
+  <div id="cad-lista"></div>
+  <div class="add-cad" onclick="agregarCadaver()">+ Añadir cadáver</div>
+  <div style="height:20px"></div>
+</div>
+
+<!-- BARRA -->
+<div class="barra">
+  <button class="btn-v" onclick="guardar()">💾 Guardar</button>
+  <button class="btn-a" onclick="exportWord()">📄 Word</button>
+  <button class="btn-n" onclick="exportExcel()">📊 Excel</button>
+  <button class="btn-g" onclick="descargarFotos()">📸 Fotos</button>
+  <button class="btn-g" onclick="limpiar()" style="margin-left:auto">🗑</button>
+</div>
+</div>
+
+<!-- CÁMARA -->
+<div id="cam-modal">
+  <video id="cam-video" autoplay playsinline></video>
+  <canvas id="cam-canvas"></canvas>
+  <div style="display:flex;gap:10px">
+    <button class="btn-v" onclick="capturarFoto()" style="padding:12px 20px;font-size:15px">📸 Capturar</button>
+    <button onclick="cerrarCamara()" style="padding:12px 20px;font-size:15px;background:#333;color:white">✕ Cancelar</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════
+// IMÁGENES DE PARQUES (georreferenciadas UTM 30N)
+// ══════════════════════════════════════════════
+const PARQUES = {
+  CE: {
+    nombre: 'Parque Eólico Caramonte',
+    xMin: 546288.058, xMax: 548557.284,
+    yMin: 4551116.896, yMax: 4554503.725,
+    imgW: 1340, imgH: 2000,
+    imgSrc: 'PE_Caramonte.jpg',
+    img: null
+  },
+  AL: {
+    nombre: 'Parque Eólico Alentisque',
+    xMin: 553806.529, xMax: 557408.183,
+    yMin: 4583503.081, yMax: 4588333.604,
+    imgW: 1491, imgH: 2000,
+    imgSrc: 'PE_Alentisque.jpg',
+    img: null
+  },
+  PA: {
+    nombre: 'Parque Eólico Parideras',
+    xMin: 541864.715, xMax: 543385.804,
+    yMin: 4563240.925, yMax: 4565390.695,
+    imgW: 1415, imgH: 2000,
+    imgSrc: 'PE_Parideras.jpg',
+    img: null
+  },
+  CA: {
+    nombre: 'Parque Eólico Carrascalejo',
+    xMin: 543616.489, xMax: 545819.520,
+    yMin: 4547991.532, yMax: 4551378.361,
+    imgW: 1301, imgH: 2000,
+    imgSrc: 'PE_Carrascalejo.jpg',
+    img: null
+  },
+  GUI: {
+    nombre: 'Parque Eólico El Guijo',
+    xMin: 568185.576, xMax: 571597.923,
+    yMin: 4534312.987, yMax: 4538955.270,
+    imgW: 1470, imgH: 2000,
+    imgSrc: 'PE_Guijo.jpg',
+    img: null
+  }
+};
+
+// Precarga de ortofotos al arrancar
+Object.values(PARQUES).forEach(parque => {
+  if (!parque.imgSrc) return;
+  const img = new Image();
+  img.src = parque.imgSrc;
+  img.onload = () => { parque.img = img; };
+  img.onerror = () => { console.warn(`No se pudo cargar la ortofoto: ${parque.imgSrc}`); };
+});
+
+function getParqueActual() {
+  const cod = document.getElementById('parque')?.value;
+  return cod ? PARQUES[cod] || null : null;
+}
+
+function crearOverlayParque(map, parqueCod) {
+  const parque = PARQUES[parqueCod];
+  if (!parque?.xMin || !parque?.imgSrc) return null;
+
+  const sw = utmToWgs84(parque.xMin, parque.yMin);
+  const ne = utmToWgs84(parque.xMax, parque.yMax);
+  const bounds = new google.maps.LatLngBounds(
+    new google.maps.LatLng(sw.lat, sw.lng),
+    new google.maps.LatLng(ne.lat, ne.lng)
+  );
+
+  const overlay = new google.maps.GroundOverlay(parque.imgSrc, bounds, { opacity: 0.85 });
+  overlay.setMap(map);
+  return overlay;
+}
+
+function addOverlayToggle(map, overlay) {
+  if (!overlay) return;
+
+  const btn = document.createElement('button');
+  btn.textContent = '🗺 Ortofoto';
+  btn.style.cssText = 'margin:8px;padding:6px 12px;font-size:12px;background:white;border:1px solid #ccc;border-radius:4px;cursor:pointer;font-family:inherit';
+  btn.onclick = () => {
+    const visible = !!overlay.getMap();
+    overlay.setMap(visible ? null : map);
+    btn.textContent = visible ? '🛰 Satélite' : '🗺 Ortofoto';
+  };
+  map.controls[google.maps.ControlPosition.TOP_LEFT].push(btn);
+}
+
+// ══════════════════════════════════════════════
+// ESTADO
+// ══════════════════════════════════════════════
+let cadaveres = [];
+let nextId = 1;
+let activeCamId = null;
+let camStream = null;
+
+// ══════════════════════════════════════════════
+// NAVEGACIÓN
+// ══════════════════════════════════════════════
+function abrirForm() {
+  document.getElementById('pantalla-menu').style.display = 'none';
+  document.getElementById('pantalla-form').style.display = 'block';
+  document.getElementById('cab-acc').style.display = 'flex';
+  document.getElementById('fecha').value = new Date().toISOString().split('T')[0];
+  cargarGuardado();
+}
+
+function volverMenu() {
+  if (cadaveres.length > 0 || document.getElementById('parque').value) {
+    if (!confirm('¿Volver al menú? Los cambios no guardados se perderán.')) return;
+  }
+  document.getElementById('pantalla-menu').style.display = 'block';
+  document.getElementById('pantalla-form').style.display = 'none';
+  document.getElementById('cab-acc').style.display = 'none';
+}
+
+// ══════════════════════════════════════════════
+// SUBPARQUE
+// ══════════════════════════════════════════════
+function actualizarSubparque() {
+  const p = document.getElementById('parque').value;
+  document.getElementById('campo-sub').style.display = p === 'GUI' ? 'block' : 'none';
+  if (p !== 'GUI') document.getElementById('subparque').value = '';
+}
+
+// ══════════════════════════════════════════════
+// REFERENCIA
+// ══════════════════════════════════════════════
+function generarRef(num) {
+  const cod = document.getElementById('parque').value || 'XX';
+  const f = document.getElementById('fecha').value;
+  let fc = '';
+  if (f) { const [y,m,d] = f.split('-'); fc = d + m + y.slice(2); }
+  return `${cod}${num}/${fc}`;
+}
+
+// ══════════════════════════════════════════════
+// UTM CONVERSION (WGS84 → UTM ETRS89 zona 30N)
+// ══════════════════════════════════════════════
+function wgs84ToUtm(lat, lon) {
+  const a=6378137, f=1/298.257222101, b=a*(1-f);
+  const e2=(a*a-b*b)/(a*a), k0=0.9996, E0=500000;
+  const zone=Math.floor((lon+180)/6)+1;
+  const lon0=((zone-1)*6-180+3)*Math.PI/180;
+  const lr=lat*Math.PI/180, lonR=lon*Math.PI/180;
+  const N=a/Math.sqrt(1-e2*Math.sin(lr)**2);
+  const T=Math.tan(lr)**2, C=e2/(1-e2)*Math.cos(lr)**2;
+  const A=Math.cos(lr)*(lonR-lon0);
+  const e4=e2*e2, e6=e2**3;
+  const M=a*((1-e2/4-3*e4/64-5*e6/256)*lr-(3*e2/8+3*e4/32+45*e6/1024)*Math.sin(2*lr)+(15*e4/256+45*e6/1024)*Math.sin(4*lr)-(35*e6/3072)*Math.sin(6*lr));
+  const X=k0*N*(A+(1-T+C)*A**3/6+(5-18*T+T**2+72*C)*A**5/120)+E0;
+  const Y=k0*(M+N*Math.tan(lr)*(A**2/2+(5-T+9*C+4*C**2)*A**4/24+(61-58*T+T**2+600*C)*A**6/720));
+  return { x:Math.round(X), y:Math.round(Y), zone };
+}
+
+// ══════════════════════════════════════════════
+// MAPA GOOGLE MAPS JAVASCRIPT API
+// ══════════════════════════════════════════════
+const GMAPS_STATIC_KEY = 'AIzaSyBFgl5TwEQcgCmjFzxWoLSGAEOwHEkOdnw';
+
+// UTM 30N → WGS84 (para posicionar la ortofoto)
+function utmToWgs84(x, y) {
+  const k0=0.9996, a=6378137, e2=0.00669438, E0=500000;
+  const M = y / k0;
+  const mu = M / (a*(1-e2/4-3*e2*e2/64));
+  const e1 = (1-Math.sqrt(1-e2))/(1+Math.sqrt(1-e2));
+  const phi1 = mu + (3*e1/2-27*e1**3/32)*Math.sin(2*mu)
+             + (21*e1**2/16-55*e1**4/32)*Math.sin(4*mu)
+             + (151*e1**3/96)*Math.sin(6*mu);
+  const N1 = a/Math.sqrt(1-e2*Math.sin(phi1)**2);
+  const T1 = Math.tan(phi1)**2;
+  const C1 = e2/(1-e2)*Math.cos(phi1)**2;
+  const R1 = a*(1-e2)/Math.pow(1-e2*Math.sin(phi1)**2, 1.5);
+  const D = (x-E0)/(N1*k0);
+  const lat = phi1 - (N1*Math.tan(phi1)/R1)*(D**2/2-(5+3*T1+10*C1-4*C1**2)*D**4/24+(61+90*T1+298*C1+45*T1**2)*D**6/720);
+  const lon = (D-(1+2*T1+C1)*D**3/6+(5-2*C1+28*T1-3*C1**2+24*T1**2)*D**5/120)/Math.cos(phi1) + (-3)*Math.PI/180;
+  return { lat: lat*180/Math.PI, lng: lon*180/Math.PI };
+}
+
+function initMapa(id, utmX, utmY) {
+  const cad = cadaveres.find(c => c.id === id);
+  if (!cad) return;
+
+  let lat = parseFloat(cad.lat);
+  let lon = parseFloat(cad.lon);
+
+  const xNum = parseFloat(utmX || cad.utmX);
+  const yNum = parseFloat(utmY || cad.utmY);
+
+  if ((!Number.isFinite(lat) || !Number.isFinite(lon)) && Number.isFinite(xNum) && Number.isFinite(yNum)) {
+    const ll = utmToWgs84(xNum, yNum);
+    lat = ll.lat;
+    lon = ll.lng;
+    cad.lat = lat.toFixed(6);
+    cad.lon = lon.toFixed(6);
+  }
+
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
+
+  const wrap = document.getElementById(`mapa-wrap-${id}`);
+  const mapaDiv = document.getElementById(`mapa-${id}`);
+  if (!wrap || !mapaDiv) return;
+  wrap.style.display = 'block';
+
+  const center = { lat, lng: lon };
+
+  if (cad.overlay) {
+    cad.overlay.setMap(null);
+    cad.overlay = null;
+  }
+  if (cad.gmarker) {
+    cad.gmarker.setMap(null);
+    cad.gmarker = null;
+  }
+  if (cad.gmap) {
+    cad.gmap = null;
+    mapaDiv.innerHTML = '';
+  }
+
+  const map = new google.maps.Map(mapaDiv, {
+    center,
+    zoom: 17,
+    mapTypeId: 'satellite',
+    mapTypeControl: true,
+    streetViewControl: false,
+    fullscreenControl: true,
+    zoomControl: true
+  });
+  cad.gmap = map;
+
+  const parqueCod = document.getElementById('parque')?.value;
+  cad.overlay = crearOverlayParque(map, parqueCod);
+  addOverlayToggle(map, cad.overlay);
+
+  const marker = new google.maps.Marker({
+    position: center,
+    map,
+    draggable: true,
+    title: 'Arrastra para ajustar la posición'
+  });
+  cad.gmarker = marker;
+
+  function actualizarDesdeMarker(pos) {
+    const utm = wgs84ToUtm(pos.lat(), pos.lng());
+    cad.lat = pos.lat().toFixed(6);
+    cad.lon = pos.lng().toFixed(6);
+    cad.utmX = utm.x.toString();
+    cad.utmY = utm.y.toString();
+    const xEl = document.getElementById(`utmX-${id}`);
+    const yEl = document.getElementById(`utmY-${id}`);
+    if (xEl) xEl.value = cad.utmX;
+    if (yEl) yEl.value = cad.utmY;
+    toast(`✓ UTM: ${cad.utmX} / ${cad.utmY}`);
+  }
+
+  marker.addListener('dragend', () => actualizarDesdeMarker(marker.getPosition()));
+  map.addListener('click', e => {
+    marker.setPosition(e.latLng);
+    actualizarDesdeMarker(e.latLng);
+  });
+
+  cad.mapaImgUrl = `https://maps.googleapis.com/maps/api/staticmap`
+    + `?center=${lat},${lon}&zoom=17&size=500x350&maptype=satellite`
+    + `&markers=color:red%7C${lat},${lon}&key=${GMAPS_STATIC_KEY}`;
+}
+
+// ══════════════════════════════════════════════
+// CADÁVERES
+// ══════════════════════════════════════════════
+function agregarCadaver() {
+  const id = nextId++;
+  const num = cadaveres.length + 1;
+  cadaveres.push({ id, num, referencia: generarRef(num), fotos:[], lat:'', lon:'', utmX:'', utmY:'' });
+  renderCadaveres();
+  actualizarBadge();
+  actualizarInventario();
+  setTimeout(() => {
+    const c = document.querySelector(`.cadaver-card[data-id="${id}"]`);
+    if (c) c.scrollIntoView({behavior:'smooth',block:'start'});
+  }, 100);
+}
+
+function eliminarCadaver(id) {
+  if (!confirm('¿Eliminar este cadáver?')) return;
+  cadaveres = cadaveres.filter(c => c.id !== id);
+  cadaveres.forEach((c,i) => { c.num=i+1; c.referencia=generarRef(i+1); });
+  nextId = cadaveres.length + 1;
+  renderCadaveres(); actualizarBadge(); actualizarInventario();
+}
+
+function actualizarBadge() {
+  document.getElementById('badge').textContent = cadaveres.length;
+}
+
+function guardarCampos(id) {
+  const card = document.querySelector(`.cadaver-card[data-id="${id}"]`);
+  const cad = cadaveres.find(c => c.id === id);
+  if (!card || !cad) return;
+  card.querySelectorAll('[data-c]').forEach(el => { cad[el.dataset.c] = el.value; });
+}
+
+function guardarTodos() { cadaveres.forEach(c => guardarCampos(c.id)); }
+
+function sel(arr, val) { return arr.map(v => `<option${val===v?' selected':''}>{v}</option>`).join(''); }
+
+function renderCadaveres() {
+  guardarTodos();
+  const lista = document.getElementById('cad-lista');
+  lista.innerHTML = '';
+
+  cadaveres.forEach(cad => {
+    const div = document.createElement('div');
+    div.className = 'cadaver-card';
+    div.dataset.id = cad.id;
+    const hasGps = cad.utmX && cad.utmY;
+    const canvasId = `mapa-canvas-${cad.id}`;
+
+    div.innerHTML = `
+      <div class="cad-cab">
+        <span class="cad-num">Cadáver #${cad.num} &nbsp;<span style="font-weight:400;font-size:12px">${cad.referencia}</span></span>
+        <button class="btn-r" onclick="eliminarCadaver(${cad.id})">✕ Eliminar</button>
+      </div>
+      <div class="cad-body">
+
+        <div class="subsec">Datos generales</div>
+        <div class="fila f2">
+          <div class="campo"><label>Tiempo desde la muerte</label>
+            <select data-c="tiempo_muerte">
+              <option value="">—</option>
+              ${sel(['<1 día','1-2 días','2-5 días','5-10 días','>10 días'], cad.tiempo_muerte||'')}
+            </select>
+          </div>
+          <div class="campo"><label>Nº referencia</label>
+            <input type="text" data-c="referencia" value="${cad.referencia||''}" class="readonly" readonly>
+          </div>
+        </div>
+
+        <div class="subsec">Datos de la especie</div>
+        <div class="fila f2">
+          <div class="campo"><label>Especie (nombre común)</label>
+            <input type="text" data-c="especie_comun" placeholder="Ej. Calandria común" value="${cad.especie_comun||''}" oninput="actualizarInventario()">
+          </div>
+          <div class="campo"><label>Nombre científico</label>
+            <input type="text" data-c="especie_cientifico" placeholder="Ej. Melanocorypha calandra" value="${cad.especie_cientifico||''}" style="font-style:italic">
+          </div>
+          <div class="campo"><label>Sexo</label>
+            <select data-c="sexo"><option value="">—</option>
+              ${sel(['Macho','Hembra','Desconocido'], cad.sexo||'')}
+            </select>
+          </div>
+          <div class="campo"><label>Edad</label>
+            <select data-c="edad"><option value="">—</option>
+              ${sel(['Adulto','Juvenil','Pollo','Desconocido'], cad.edad||'')}
+            </select>
+          </div>
+        </div>
+
+        <div class="subsec">Localización</div>
+        <div class="fila f2" style="margin-bottom:8px">
+          <div class="campo"><label>Nº de aerogenerador</label>
+            <input type="text" data-c="aerogenerador" placeholder="Ej. A4" value="${cad.aerogenerador||''}" oninput="actualizarInventario()">
+          </div>
+          <div class="campo"><label>Hábitat</label>
+            <select data-c="habitat"><option value="">—</option>
+              ${sel(['Cultivos agrícolas','Matorral','Pastizal','Bosque','Roquedo','Zona húmeda','Otro'], cad.habitat||'')}
+            </select>
+          </div>
+        </div>
+
+        <div class="gps-fila">
+          <div class="campo"><label>UTM X (ETRS89)</label>
+            <input type="text" data-c="utmX" id="utmX-${cad.id}" value="${cad.utmX||''}" placeholder="Ej. 547000" oninput="utmManual(${cad.id})">
+          </div>
+          <div class="campo"><label>UTM Y (ETRS89)</label>
+            <input type="text" data-c="utmY" id="utmY-${cad.id}" value="${cad.utmY||''}" placeholder="Ej. 4553000" oninput="utmManual(${cad.id})">
+          </div>
+          <button class="btn-v btn-sm" onclick="obtenerGPS(${cad.id})">📍 GPS</button>
+        </div>
+
+        ${hasGps ? `<div class="gps-badge">✓ UTM: ${cad.utmX} / ${cad.utmY}</div>` : ''}
+
+        <div class="mapa-wrap" style="${hasGps?'':'display:none'}" id="mapa-wrap-${cad.id}">
+          <div id="mapa-${cad.id}" style="height:260px;width:100%"></div>
+        </div>
+        ${hasGps ? '<p class="mapa-hint">Toca para mover el marcador · arrastra para desplazarte · botón 🗺 para ver ortofoto</p>' : ''}
+
+        <div class="fila f2" style="margin-top:10px">
+          <div class="campo"><label>Distancia al aerogenerador</label>
+            <input type="text" data-c="distancia" placeholder="Ej. 16 m suroeste" value="${cad.distancia||''}">
+          </div>
+          <div class="campo"><label>Diagnóstico de mortandad</label>
+            <select data-c="diagnostico"><option value="">—</option>
+              ${sel(['Colisión con aerogenerador','Barotrauma','Indeterminada','Otra causa'], cad.diagnostico||'')}
+            </select>
+          </div>
+        </div>
+
+        <div class="subsec" style="margin-top:12px">Descripción de los restos</div>
+        <div class="campo" style="margin-bottom:10px">
+          <textarea data-c="descripcion" rows="3" placeholder="Estado del cadáver...">${cad.descripcion||''}</textarea>
+        </div>
+        <div class="campo" style="margin-bottom:12px">
+          <label>Observaciones</label>
+          <input type="text" data-c="observaciones" placeholder="Ej. Depositado en arcón congelador..." value="${cad.observaciones||''}">
+        </div>
+
+        <div class="subsec">Fotografías</div>
+        <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+          <button class="btn-a btn-sm" onclick="abrirCamara(${cad.id})">📷 Cámara</button>
+          <button class="btn-g btn-sm" onclick="document.getElementById('file-${cad.id}').click()">🖼 Galería</button>
+          <input type="file" id="file-${cad.id}" accept="image/*" multiple onchange="cargarFotos(${cad.id},this)">
+        </div>
+        <div class="fotos-grid" id="fotos-${cad.id}">
+          ${cad.fotos.map((f,fi)=>`
+            <div class="foto-thumb">
+              <img src="${f}">
+              <button class="foto-del" onclick="eliminarFoto(${cad.id},${fi})">✕</button>
+            </div>`).join('')}
+        </div>
+
+      </div>
+    `;
+    lista.appendChild(div);
+
+    // Init Google map if coords exist
+    if (hasGps) {
+      setTimeout(() => initMapa(cad.id, cad.utmX, cad.utmY), 150);
+    }
+  });
+}
+
+// ══════════════════════════════════════════════
+// INVENTARIO
+// ══════════════════════════════════════════════
+function actualizarInventario() {
+  guardarTodos();
+  const tbody = document.getElementById('inv-tbody');
+  if (!cadaveres.length) {
+    tbody.innerHTML = '<tr><td colspan="4" class="inv-vacio">Sin cadáveres registrados</td></tr>';
+    return;
+  }
+  tbody.innerHTML = cadaveres.map(c => `
+    <tr>
+      <td>${c.referencia||''}</td>
+      <td>${c.especie_comun||''}${c.especie_cientifico?` (<i>${c.especie_cientifico}</i>)`:''}</td>
+      <td>${c.aerogenerador||''}</td>
+      <td>${c.observaciones||''}</td>
+    </tr>`).join('');
+}
+
+// ══════════════════════════════════════════════
+// GPS
+// ══════════════════════════════════════════════
+function obtenerGPS(id) {
+  if (!navigator.geolocation) { toast('GPS no disponible'); return; }
+  toast('Obteniendo posición GPS…');
+  navigator.geolocation.getCurrentPosition(pos => {
+    const lat = pos.coords.latitude, lon = pos.coords.longitude;
+    const utm = wgs84ToUtm(lat, lon);
+    const cad = cadaveres.find(c => c.id === id);
+    if (!cad) return;
+    cad.lat = lat.toFixed(6); cad.lon = lon.toFixed(6);
+    cad.utmX = utm.x.toString(); cad.utmY = utm.y.toString();
+    document.getElementById(`utmX-${id}`).value = cad.utmX;
+    document.getElementById(`utmY-${id}`).value = cad.utmY;
+
+    // Show map
+    const wrap = document.getElementById(`mapa-wrap-${id}`);
+    if (wrap) wrap.style.display = 'block';
+    initMapa(id, cad.utmX, cad.utmY);
+    toast(`✓ UTM: ${cad.utmX} / ${cad.utmY}`);
+  }, () => toast('No se pudo obtener la posición GPS'), {enableHighAccuracy:true, timeout:15000});
+}
+
+function utmManual(id) {
+  const cad = cadaveres.find(c => c.id === id);
+  if (!cad) return;
+  const x = document.getElementById(`utmX-${id}`)?.value;
+  const y = document.getElementById(`utmY-${id}`)?.value;
+  cad.utmX = x; cad.utmY = y;
+  if (!x || !y || isNaN(parseFloat(x)) || isNaN(parseFloat(y))) return;
+  const wrap = document.getElementById(`mapa-wrap-${id}`);
+  if (wrap) wrap.style.display = 'block';
+  initMapa(id, x, y);
+}
+
+// ══════════════════════════════════════════════
+// CÁMARA
+// ══════════════════════════════════════════════
+async function abrirCamara(id) {
+  activeCamId = id;
+  try {
+    camStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'},audio:false});
+    document.getElementById('cam-video').srcObject = camStream;
+    document.getElementById('cam-modal').classList.add('abierto');
+  } catch(e) { toast('No se pudo acceder a la cámara — usa Galería'); }
+}
+function capturarFoto() {
+  const v=document.getElementById('cam-video'), c=document.getElementById('cam-canvas');
+  c.width=v.videoWidth; c.height=v.videoHeight;
+  c.getContext('2d').drawImage(v,0,0);
+  addFoto(activeCamId, c.toDataURL('image/jpeg',0.82));
+  cerrarCamara();
+}
+function cerrarCamara() {
+  if (camStream) { camStream.getTracks().forEach(t=>t.stop()); camStream=null; }
+  document.getElementById('cam-modal').classList.remove('abierto');
+  document.getElementById('cam-video').srcObject=null;
+}
+function cargarFotos(id, input) {
+  Array.from(input.files).forEach(f => {
+    const r=new FileReader(); r.onload=e=>addFoto(id,e.target.result); r.readAsDataURL(f);
+  });
+  input.value='';
+}
+function addFoto(id, dataURL) {
+  const cad=cadaveres.find(c=>c.id===id); if(!cad) return;
+  cad.fotos.push(dataURL);
+  const grid=document.getElementById(`fotos-${id}`); if(!grid) return;
+  const fi=cad.fotos.length-1;
+  const t=document.createElement('div'); t.className='foto-thumb';
+  t.innerHTML=`<img src="${dataURL}"><button class="foto-del" onclick="eliminarFoto(${id},${fi})">✕</button>`;
+  grid.appendChild(t); toast('✓ Foto añadida');
+}
+function eliminarFoto(id,fi) {
+  const cad=cadaveres.find(c=>c.id===id); if(!cad) return;
+  cad.fotos.splice(fi,1);
+  const g=document.getElementById(`fotos-${id}`);
+  if(g) g.innerHTML=cad.fotos.map((f,i)=>`
+    <div class="foto-thumb"><img src="${f}">
+    <button class="foto-del" onclick="eliminarFoto(${id},${i})">✕</button></div>`).join('');
+}
+
+// ══════════════════════════════════════════════
+// GUARDAR / CARGAR
+// ══════════════════════════════════════════════
+function getDatosVisita() {
+  return {
+    parque: document.getElementById('parque').value,
+    subparque: document.getElementById('subparque').value,
+    municipio: document.getElementById('municipio').value,
+    periodo: document.getElementById('periodo').value,
+    fecha: document.getElementById('fecha').value,
+    observador: document.getElementById('observador').value,
+    temperatura: document.getElementById('temperatura').value,
+    visibilidad: document.getElementById('visibilidad').value,
+    viento_dir: document.getElementById('viento_dir').value,
+    viento_vel: document.getElementById('viento_vel').value,
+    precipitacion: document.getElementById('precipitacion').value,
+    nubosidad: document.getElementById('nubosidad').value,
+  };
+}
+
+function guardar() {
+  guardarTodos();
+  try {
+    const cadaveresLimpios = cadaveres.map(c => {
+      const { gmap, gmarker, overlay, leafletMap, leafletMarker, miniMap, miniMarker, marker, ...resto } = c;
+      // No guardamos las fotos en localStorage si son muy grandes — solo los datos de texto
+      return resto;
+    });
+    const datos = { visita: getDatosVisita(), cadaveres: cadaveresLimpios };
+    const json = JSON.stringify(datos);
+    localStorage.setItem('mortandad_v1', json);
+    toast('✓ Datos guardados en el dispositivo');
+  } catch(e) {
+    // Si falla por las fotos, guardar sin fotos
+    try {
+      const cadaveresSinFotos = cadaveres.map(c => {
+        const { gmap, gmarker, overlay, leafletMap, leafletMarker, fotos, ...resto } = c;
+        return { ...resto, fotos: [] };
+      });
+      localStorage.setItem('mortandad_v1', JSON.stringify({ visita: getDatosVisita(), cadaveres: cadaveresSinFotos }));
+      toast('⚠ Guardado sin fotos — las fotos descárgalas antes de cerrar');
+    } catch(e2) {
+      toast('Error al guardar — intenta limpiar datos del navegador');
+    }
+  }
+}
+
+function cargarGuardado() {
+  try {
+    const raw = localStorage.getItem('mortandad_v1'); if(!raw) return;
+    const datos = JSON.parse(raw);
+    const v = datos.visita || {};
+    Object.keys(v).forEach(k => { const el=document.getElementById(k); if(el) el.value=v[k]; });
+    actualizarSubparque();
+    if (datos.cadaveres?.length) {
+      cadaveres = datos.cadaveres;
+      nextId = Math.max(...cadaveres.map(c=>c.id)) + 1;
+      renderCadaveres(); actualizarBadge(); actualizarInventario();
+      toast('✓ Datos anteriores recuperados');
+    }
+  } catch(e) {}
+}
+
+// Capturar URL del mapa para Word
+function capturarImgMapa(cad) {
+  if (!cad.lat || !cad.lon) return null;
+  return `https://maps.googleapis.com/maps/api/staticmap`
+    + `?center=${cad.lat},${cad.lon}`
+    + `&zoom=17&size=500x350&maptype=satellite`
+    + `&markers=color:red%7C${cad.lat},${cad.lon}`
+    + `&key=${GMAPS_KEY}`;
+}
+
+// ══════════════════════════════════════════════
+// EXPORTAR WORD
+// ══════════════════════════════════════════════
+function exportWord() {
+  guardarTodos();
+  const v = getDatosVisita();
+  const pNombre = PARQUES[v.parque]?.nombre || v.parque;
+  const pFull = v.subparque ? `${pNombre} — ${v.subparque}` : pNombre;
+
+  let html = `<html xmlns:o='urn:schemas-microsoft-com:office:office'
+    xmlns:w='urn:schemas-microsoft-com:office:word'
+    xmlns='http://www.w3.org/TR/REC-html40'>
+<head><meta charset="UTF-8"><style>
+body{font-family:Arial,sans-serif;font-size:10pt;margin:2cm}
+h2{font-size:13pt;color:#1a5c20;border-bottom:2px solid #1a5c20;padding-bottom:4px;margin:16px 0 8px}
+h3{font-size:11pt;color:#1565c0;margin:12px 0 6px;border-bottom:1px solid #1565c0;padding-bottom:2px}
+table{border-collapse:collapse;width:100%;margin-bottom:10px}
+th{background:#e8f5e9;font-weight:bold;font-size:9pt;padding:5px 7px;border:1px solid #b0bec5}
+td{padding:5px 7px;border:1px solid #b0bec5;font-size:10pt;vertical-align:top}
+.sub{font-size:8pt;color:#546e7a;font-weight:bold;text-transform:uppercase;letter-spacing:.05em}
+.pb{page-break-before:always}
+em{font-style:italic}
+img{max-width:100%;height:auto}
+</style></head><body>
+
+<h2>INVENTARIO DE RESTOS — ${pFull}</h2>
+<p style="font-size:9pt;color:#546e7a;margin-bottom:12px">Visita correspondiente al mes de <strong>${v.periodo||'—'}</strong></p>
+
+<table>
+<tr><th colspan="2">Datos generales</th></tr>
+<tr><td><span class="sub">Parque</span><br>${pFull||'—'}</td>
+    <td><span class="sub">Término municipal</span><br>${v.municipio||'—'}</td></tr>
+<tr><td><span class="sub">Fecha</span><br>${fmtFecha(v.fecha)}</td>
+    <td><span class="sub">Observador</span><br>${v.observador||'—'}</td></tr>
+</table>
+
+<table>
+<tr><th colspan="4">Tiempo atmosférico</th></tr>
+<tr>
+  <td><span class="sub">Temperatura</span><br>${v.temperatura||'—'}</td>
+  <td><span class="sub">Visibilidad</span><br>${v.visibilidad||'—'}</td>
+  <td><span class="sub">Dirección viento</span><br>${v.viento_dir||'—'}</td>
+  <td><span class="sub">Velocidad</span><br>${v.viento_vel||'—'}</td>
+</tr>
+<tr>
+  <td><span class="sub">Precipitación</span><br>${v.precipitacion||'—'}</td>
+  <td><span class="sub">Nubosidad</span><br>${v.nubosidad||'—'}</td>
+  <td colspan="2"></td>
+</tr>
+</table>
+
+<h2>INVENTARIO DE RESTOS</h2>
+<table>
+<tr><th>Nº Ref</th><th>Especie</th><th>Nº Aerogenerador</th><th>Observaciones</th></tr>
+${cadaveres.length ? cadaveres.map(c=>`
+<tr>
+  <td>${c.referencia||''}</td>
+  <td>${c.especie_comun||''}${c.especie_cientifico?` (<em>${c.especie_cientifico}</em>)`:''}</td>
+  <td>${c.aerogenerador||''}</td>
+  <td>${c.observaciones||''}</td>
+</tr>`).join('') : '<tr><td colspan="4" style="text-align:center;color:#999;font-style:italic">Sin cadáveres registrados</td></tr>'}
+</table>`;
+
+  cadaveres.forEach((c,i) => {
+    const imgMapa = capturarImgMapa(c);
+    html += `
+<div class="pb"></div>
+<h2>FICHA DE CADÁVER — ${c.referencia||`#${c.num}`}</h2>
+<table>
+<tr><th colspan="4">Datos generales</th></tr>
+<tr>
+  <td><span class="sub">Parque</span><br>${pFull||'—'}</td>
+  <td><span class="sub">Término municipal</span><br>${v.municipio||'—'}</td>
+  <td><span class="sub">Fecha</span><br>${fmtFecha(v.fecha)}</td>
+  <td><span class="sub">Tiempo desde la muerte</span><br>${c.tiempo_muerte||'—'}</td>
+</tr>
+</table>
+<table>
+<tr><th colspan="4">Datos de la especie</th></tr>
+<tr>
+  <td><span class="sub">Nº referencia</span><br>${c.referencia||'—'}</td>
+  <td colspan="2"><span class="sub">Especie</span><br>${c.especie_comun||'—'}${c.especie_cientifico?` (<em>${c.especie_cientifico}</em>)`:''}</td>
+  <td><span class="sub">Sexo</span><br>${c.sexo||'—'}</td>
+</tr>
+<tr>
+  <td><span class="sub">Edad</span><br>${c.edad||'—'}</td>
+  <td colspan="3"></td>
+</tr>
+</table>
+<table>
+<tr><th colspan="4">Localización</th></tr>
+<tr>
+  <td><span class="sub">Nº aerogenerador</span><br>${c.aerogenerador||'—'}</td>
+  <td><span class="sub">Hábitat</span><br>${c.habitat||'—'}</td>
+  <td colspan="2"><span class="sub">Coordenadas UTM ETRS89</span><br>X: ${c.utmX||'—'} &nbsp; Y: ${c.utmY||'—'}</td>
+</tr>
+<tr>
+  <td colspan="2"><span class="sub">Distancia al aerogenerador</span><br>${c.distancia||'—'}</td>
+  <td colspan="2"><span class="sub">Diagnóstico de mortandad</span><br>${c.diagnostico||'—'}</td>
+</tr>
+<tr><td colspan="4"><span class="sub">Observaciones</span><br>${c.observaciones||'—'}</td></tr>
+</table>
+<table>
+<tr><th>Descripción de los restos</th></tr>
+<tr><td>${c.descripcion||'—'}</td></tr>
+</table>
+${imgMapa ? `<h3>Localización en ortofoto</h3><p><img src="${imgMapa}" style="max-width:500px;border:1px solid #ccc"></p>` : ''}
+${c.fotos.length ? `<h3>Fotografías</h3><table><tr>${c.fotos.map(f=>`<td style="text-align:center;border:1px solid #ccc;padding:4px"><img src="${f}" style="max-width:180px;max-height:150px;display:block"></td>`).join('')}</tr></table>` : ''}
+`;
+  });
+
+  html += '</body></html>';
+  const cod = (v.parque||'parque');
+  descargar(html, `mortandad_${cod}_${v.fecha||'fecha'}.doc`, 'application/msword');
+  toast('✓ Word descargado');
+}
+
+// ══════════════════════════════════════════════
+// EXPORTAR EXCEL (CSV)
+// ══════════════════════════════════════════════
+function exportExcel() {
+  guardarTodos();
+  const v = getDatosVisita();
+  const cols = ['Parque','Subparque','Municipio','Periodo','Fecha','Observador',
+    'Temperatura','Visibilidad','Viento_Dir','Viento_Vel','Precipitacion','Nubosidad',
+    'Nº_Ref','Especie','Nombre_Cientifico','Sexo','Edad','Aerogenerador','Habitat',
+    'Lat_WGS84','Lon_WGS84','UTM_X_ETRS89','UTM_Y_ETRS89',
+    'Distancia','Diagnostico','Tiempo_Muerte','Descripcion','Observaciones'];
+
+  const filas = cadaveres.length ? cadaveres.map(c=>[
+    PARQUES[v.parque]?.nombre||v.parque, v.subparque, v.municipio, v.periodo, v.fecha, v.observador,
+    v.temperatura, v.visibilidad, v.viento_dir, v.viento_vel, v.precipitacion, v.nubosidad,
+    c.referencia, c.especie_comun||'', c.especie_cientifico||'', c.sexo||'', c.edad||'',
+    c.aerogenerador||'', c.habitat||'',
+    c.lat||'', c.lon||'', c.utmX||'', c.utmY||'',
+    c.distancia||'', c.diagnostico||'', c.tiempo_muerte||'', c.descripcion||'', c.observaciones||''
+  ]) : [[PARQUES[v.parque]?.nombre||v.parque, v.subparque, v.municipio, v.periodo, v.fecha, v.observador,
+    v.temperatura, v.visibilidad, v.viento_dir, v.viento_vel, v.precipitacion, v.nubosidad,
+    '','','','','','','','','','','','','','','','']];
+
+  const csv = '\uFEFF' + [cols,...filas]
+    .map(r=>r.map(x=>`"${(x||'').toString().replace(/"/g,'""')}"`).join(';'))
+    .join('\r\n');
+  descargar(csv, `mortandad_${v.parque||'parque'}_${v.fecha||'fecha'}.csv`, 'text/csv;charset=utf-8');
+  toast('✓ Excel descargado');
+}
+
+// ══════════════════════════════════════════════
+// DESCARGAR FOTOS
+// ══════════════════════════════════════════════
+async function descargarFotos() {
+  guardarTodos();
+  const todas = cadaveres.flatMap(c=>c.fotos.map((f,i)=>{return{dataURL:f,nombre:`${c.referencia||`cad${c.num}`}_foto${i+1}.jpg`}}));
+  if (!todas.length) { toast('No hay fotos para descargar'); return; }
+  for (const foto of todas) {
+    await new Promise(res=>{
+      const a=document.createElement('a'); a.href=foto.dataURL; a.download=foto.nombre; a.click();
+      setTimeout(res,400);
+    });
+  }
+  toast(`✓ ${todas.length} foto(s) descargada(s)`);
+}
+
+// ══════════════════════════════════════════════
+// UTILIDADES
+// ══════════════════════════════════════════════
+function descargar(contenido, nombre, tipo) {
+  const blob=new Blob([contenido],{type:tipo});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download=nombre; a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+
+function fmtFecha(f) {
+  if(!f) return '—';
+  const [y,m,d]=f.split('-'); return `${d}-${m}-${y}`;
+}
+
+function limpiar() {
+  if(!confirm('¿Limpiar todo el formulario?')) return;
+  ['parque','subparque','municipio','periodo','observador',
+   'temperatura','visibilidad','nubosidad','precipitacion','viento_dir','viento_vel']
+   .forEach(id=>{const el=document.getElementById(id);if(el) el.value='';});
+  document.getElementById('fecha').value=new Date().toISOString().split('T')[0];
+  document.getElementById('campo-sub').style.display='none';
+  cadaveres=[]; nextId=1;
+  renderCadaveres(); actualizarBadge(); actualizarInventario();
+  toast('Formulario limpiado');
+}
+
+function toast(msg) {
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('vis');
+  setTimeout(()=>t.classList.remove('vis'),3000);
+}
+
+document.getElementById('fecha').value=new Date().toISOString().split('T')[0];
+</script>
+</body></html>

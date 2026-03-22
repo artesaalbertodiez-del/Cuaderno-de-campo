@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Mortalidad de Fauna — ENGIE v7</title>
+<title>Seguimiento Ambiental — ENGIE v8</title>
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBnmL9E_YOvPD-4N_jvsqPrl1VlBcuErO8"></script>
 <style>
 :root {
@@ -33,6 +33,11 @@ body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 14px; background: 
 .cabecera p { font-size: 11px; opacity: .85; }
 .cab-acciones { margin-left: auto; display: flex; gap: 8px; }
 
+#pantalla-inicio { padding: 32px 16px; max-width: 500px; margin: 0 auto; }
+#pantalla-inicio .app-logo { text-align: center; margin-bottom: 28px; }
+#pantalla-inicio .app-logo div { font-size: 48px; margin-bottom: 8px; }
+#pantalla-inicio .app-logo h2 { font-size: 18px; font-weight: 700; color: var(--texto); }
+#pantalla-inicio .app-logo p { font-size: 12px; color: var(--texto2); margin-top: 4px; }
 #pantalla-menu { padding: 24px 16px; max-width: 500px; margin: 0 auto; }
 #pantalla-menu h2 { font-size: 13px; color: var(--texto2); margin-bottom: 16px; text-transform: uppercase; letter-spacing: .05em; }
 .menu-btn {
@@ -177,6 +182,7 @@ input[type="file"] { display: none; }
 
 /* ── HISTORIAL ── */
 #pantalla-historial, #pantalla-sync, #pantalla-ajustes { display: none; max-width: 640px; margin: 0 auto; padding: 16px; padding-bottom: 80px; }
+#pantalla-inicio { display: block; }
 .historial-empty { text-align: center; padding: 48px 24px; color: var(--texto2); }
 .historial-empty div { font-size: 40px; margin-bottom: 12px; }
 .visita-card {
@@ -246,16 +252,44 @@ input[type="file"] { display: none; }
 <div class="cabecera">
   <div style="font-size:22px">🦅</div>
   <div>
-    <h1>Mortalidad de Fauna</h1>
-    <p>ENGIE Wind Farms</p>
+    <h1 id="cab-titulo">Seguimiento Ambiental</h1>
+    <p id="cab-subtitulo">ENGIE Wind Farms</p>
   </div>
   <div class="cab-acciones" id="cab-acc" style="display:none">
-    <button class="btn-g btn-sm" onclick="volverMenu()">← Menú</button>
+    <button class="btn-g btn-sm" id="cab-btn-menu" onclick="volverMenu()">← Menú</button>
+    <button class="btn-g btn-sm" id="cab-btn-inicio" onclick="volverInicio()" style="display:none">⌂ Inicio</button>
   </div>
 </div>
 
-<!-- MENÚ -->
-<div id="pantalla-menu" style="padding:20px 16px;max-width:500px;margin:0 auto">
+<!-- INICIO — SELECTOR DE MÓDULO -->
+<div id="pantalla-inicio">
+  <div class="app-logo">
+    <div>🦅</div>
+    <h2>Seguimiento Ambiental</h2>
+    <p>ENGIE Wind Farms · España</p>
+  </div>
+
+  <div class="menu-section-title">Módulos disponibles</div>
+
+  <button class="menu-btn" onclick="abrirModulo('mortandad')">
+    <div class="menu-btn-ico">💀</div>
+    <div class="menu-btn-txt">
+      <strong>Datos de Mortandad</strong>
+      <span>Registro de cadáveres y seguimiento de fauna</span>
+    </div>
+  </button>
+
+  <button class="menu-btn" onclick="abrirModulo('censos')">
+    <div class="menu-btn-ico">🔭</div>
+    <div class="menu-btn-txt">
+      <strong>Censos</strong>
+      <span>Próximamente disponible</span>
+    </div>
+  </button>
+</div>
+
+<!-- MENÚ MORTANDAD -->
+<div id="pantalla-menu" style="display:none;padding:20px 16px;max-width:500px;margin:0 auto">
 
   <div class="menu-section-title">Formulario</div>
   <button class="menu-btn" onclick="nuevoFormulario()">
@@ -682,32 +716,63 @@ let activeCamId = null;
 let camStream = null;
 
 // ══════════════════════════════════════════════
-// ESTADO GLOBAL v7
+// ESTADO GLOBAL v8
 // ══════════════════════════════════════════════
-let visitaActivaId = null; // ID de la visita en edición
+let visitaActivaId = null;
+let moduloActivo = null; // 'mortandad' | 'censos'
 
 // ══════════════════════════════════════════════
 // NAVEGACIÓN
 // ══════════════════════════════════════════════
-const PANTALLAS = ['pantalla-menu','pantalla-form','pantalla-historial','pantalla-sync','pantalla-ajustes'];
+const PANTALLAS = ['pantalla-inicio','pantalla-menu','pantalla-form','pantalla-historial','pantalla-sync','pantalla-ajustes'];
 
 function mostrarPantalla(id) {
   PANTALLAS.forEach(p => {
     const el = document.getElementById(p);
-    if (el) el.style.display = p === id ? (p === 'pantalla-form' ? 'block' : 'block') : 'none';
+    if (el) el.style.display = p === id ? 'block' : 'none';
   });
   const enForm = id === 'pantalla-form';
-  document.getElementById('cab-acc').style.display = enForm ? 'flex' : 'none';
+  const enInicio = id === 'pantalla-inicio';
+  const enMenu = id === 'pantalla-menu';
+
+  // Cabecera acciones
+  document.getElementById('cab-acc').style.display = enInicio ? 'none' : 'flex';
+  document.getElementById('cab-btn-menu').style.display = enForm ? 'inline-flex' : 'none';
+  document.getElementById('cab-btn-inicio').style.display = (!enInicio && !enForm) ? 'inline-flex' : 'none';
+
+  // Barra inferior
   const barra = document.querySelector('.barra');
   if (barra) barra.style.display = enForm ? 'flex' : 'none';
+
+  // Título cabecera
+  const titulos = {
+    'pantalla-inicio': ['Seguimiento Ambiental', 'ENGIE Wind Farms'],
+    'pantalla-menu':   ['Mortandad de Fauna', 'ENGIE Wind Farms'],
+    'pantalla-form':   ['Registro de Visita', 'Mortandad de Fauna'],
+    'pantalla-historial': ['Historial', 'Mortandad de Fauna'],
+    'pantalla-sync':   ['Sincronizar', 'Google Drive · Sheets'],
+    'pantalla-ajustes':['Ajustes', 'ENGIE Wind Farms'],
+  };
+  const [t, s] = titulos[id] || ['Seguimiento Ambiental', 'ENGIE Wind Farms'];
+  document.getElementById('cab-titulo').textContent = t;
+  document.getElementById('cab-subtitulo').textContent = s;
+}
+
+function abrirModulo(modulo) {
+  if (modulo === 'censos') { toast('Censos — próximamente disponible'); return; }
+  moduloActivo = modulo;
+  mostrarPantalla('pantalla-menu');
+  actualizarMenuContadores();
+}
+
+function volverInicio() {
+  mostrarPantalla('pantalla-inicio');
 }
 
 function nuevoFormulario() {
-  // Crea una visita nueva en borrador
   visitaActivaId = 'visita_' + Date.now();
   cadaveres = []; nextId = 1;
 
-  // Limpiar campos
   ['parque','municipio','periodo','observador',
    'temperatura','visibilidad','nubosidad','precipitacion','viento_dir','viento_vel',
    'hora_inicio','hora_fin'].forEach(id => {
@@ -715,21 +780,20 @@ function nuevoFormulario() {
   });
   document.getElementById('fecha').value = new Date().toISOString().split('T')[0];
 
-  // Autorellenar observador desde ajustes
   const obs = (getAjustes().observador || '').trim();
   if (obs) document.getElementById('observador').value = obs;
 
   renderCadaveres(); actualizarBadge(); actualizarInventario();
   mostrarPantalla('pantalla-form');
-  guardarVisitaActual(); // Crea el borrador vacío en localStorage
+  guardarVisitaActual();
 }
 
-function abrirForm() { nuevoFormulario(); } // Alias por compatibilidad
+function abrirForm() { nuevoFormulario(); }
 
 function volverMenu() {
   if (document.getElementById('pantalla-form').style.display !== 'none') {
     if (cadaveres.length > 0 || document.getElementById('parque').value) {
-      guardar(); // Autosave al salir
+      guardar();
     }
   }
   mostrarPantalla('pantalla-menu');
@@ -758,7 +822,6 @@ function abrirAjustes() {
 function actualizarMenuContadores() {
   const visitas = getVisitas();
   const n = visitas.length;
-  const pend = visitas.filter(v => !v.subida).length;
   document.getElementById('menu-historial-sub').textContent =
     n === 0 ? 'Sin visitas guardadas' : `${n} visita${n>1?'s':''} guardada${n>1?'s':''}`;
 }
@@ -2047,7 +2110,7 @@ function limpiar() {
 // ══════════════════════════════════════════════
 // GOOGLE OAUTH + DRIVE + SHEETS
 // ══════════════════════════════════════════════
-const GOOGLE_CLIENT_ID = '367256652135-asmosgmulfi8uog242b8shbivubehiei.apps.googleusercontent.com'; // Rellenar con tu Client ID de Google Cloud
+const GOOGLE_CLIENT_ID = ''; // Rellenar con tu Client ID de Google Cloud
 const GOOGLE_SCOPES = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/spreadsheets';
 
 let gTokenClient = null;
@@ -2140,10 +2203,12 @@ async function subirVisita(id) {
   toast('Subiendo…');
 
   try {
-    // 1. Subir Word a Drive
+    // 1. Subir Word a Drive con subcarpeta por parque
     const wordBlob = generarWordBlob(vis.visita || {}, vis.cadaveres || []);
     const nombreFichero = `Ficha_${vis.visita?.parque||'parque'}_${vis.visita?.fecha||'fecha'}.doc`;
-    await subirArchivoDrive(wordBlob, nombreFichero, aj.driveCarpeta || 'Mortandad ENGIE');
+    const pInfo = PARQUES[vis.visita?.parque] || {};
+    const subCarpeta = pInfo.nombre || vis.visita?.parque || null;
+    await subirArchivoDrive(wordBlob, nombreFichero, aj.driveCarpeta || 'Mortandad ENGIE', subCarpeta);
 
     // 2. Volcar filas al Sheet (si hay ID de hoja configurado)
     if (aj.sheetId) {
@@ -2186,12 +2251,20 @@ function generarWordBlob(v, cads) {
   return new Blob([doc], { type: 'application/msword' });
 }
 
-async function subirArchivoDrive(blob, nombre, carpeta) {
-  // Buscar o crear carpeta
-  let folderId = await buscarCarpetaDrive(carpeta);
-  if (!folderId) folderId = await crearCarpetaDrive(carpeta);
+async function subirArchivoDrive(blob, nombre, carpetaRaiz, subCarpeta) {
+  // 1. Carpeta raíz
+  let rootId = await buscarCarpetaDrive(carpetaRaiz, null);
+  if (!rootId) rootId = await crearCarpetaDrive(carpetaRaiz, null);
 
-  const metadata = { name: nombre, mimeType: 'application/msword', parents: folderId ? [folderId] : [] };
+  // 2. Subcarpeta de parque dentro de la raíz
+  let folderId = rootId;
+  if (subCarpeta) {
+    let subId = await buscarCarpetaDrive(subCarpeta, rootId);
+    if (!subId) subId = await crearCarpetaDrive(subCarpeta, rootId);
+    folderId = subId;
+  }
+
+  const metadata = { name: nombre, mimeType: 'application/msword', parents: [folderId] };
   const form = new FormData();
   form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
   form.append('file', blob);
@@ -2205,20 +2278,24 @@ async function subirArchivoDrive(blob, nombre, carpeta) {
   return await res.json();
 }
 
-async function buscarCarpetaDrive(nombre) {
-  const q = encodeURIComponent(`mimeType='application/vnd.google-apps.folder' and name='${nombre}' and trashed=false`);
-  const res = await fetch(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name)`, {
-    headers: { Authorization: `Bearer ${gAccessToken}` }
-  });
+async function buscarCarpetaDrive(nombre, parentId) {
+  let q = `mimeType='application/vnd.google-apps.folder' and name='${nombre}' and trashed=false`;
+  if (parentId) q += ` and '${parentId}' in parents`;
+  const res = await fetch(
+    `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id,name)`,
+    { headers: { Authorization: `Bearer ${gAccessToken}` } }
+  );
   const data = await res.json();
   return data.files?.[0]?.id || null;
 }
 
-async function crearCarpetaDrive(nombre) {
+async function crearCarpetaDrive(nombre, parentId) {
+  const body = { name: nombre, mimeType: 'application/vnd.google-apps.folder' };
+  if (parentId) body.parents = [parentId];
   const res = await fetch('https://www.googleapis.com/drive/v3/files', {
     method: 'POST',
     headers: { Authorization: `Bearer ${gAccessToken}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name: nombre, mimeType: 'application/vnd.google-apps.folder' })
+    body: JSON.stringify(body)
   });
   const data = await res.json();
   return data.id || null;
@@ -2268,6 +2345,7 @@ function toast(msg) {
 // ══════════════════════════════════════════════
 migrarV6();
 actualizarMenuContadores();
+mostrarPantalla('pantalla-inicio');
 const barraEl = document.querySelector('.barra');
 if (barraEl) barraEl.style.display = 'none';
 

@@ -1028,7 +1028,7 @@ function guardarCampos(id) {
 
 function guardarTodos() { cadaveres.forEach(c => guardarCampos(c.id)); }
 
-function sel(arr, val) { return arr.map(v => `<option${val===v?' selected':''}>{v}</option>`).join(''); }
+function sel(arr, val) { return arr.map(v => `<option value="${v}"${val===v?' selected':''}>${v}</option>`).join(''); }
 
 function renderCadaveres() {
   guardarTodos();
@@ -1051,11 +1051,8 @@ function renderCadaveres() {
 
         <div class="subsec">Datos generales</div>
         <div class="fila f2">
-          <div class="campo"><label>Tiempo desde la muerte</label>
-            <select data-c="tiempo_muerte">
-              <option value="">—</option>
-              ${sel(['<1 día','1-2 días','2-5 días','5-10 días','>10 días'], cad.tiempo_muerte||'')}
-            </select>
+          <div class="campo"><label>Tiempo desde la muerte (días)</label>
+            <input type="number" data-c="tiempo_muerte" min="0" step="0.5" placeholder="Ej. 1" value="${cad.tiempo_muerte||''}">
           </div>
           <div class="campo"><label>Nº referencia</label>
             <input type="text" data-c="referencia" value="${cad.referencia||''}" class="readonly" readonly>
@@ -1377,7 +1374,7 @@ function capturarImgMapa(cad) {
 // ══════════════════════════════════════════════
 // EXPORTAR WORD
 // ══════════════════════════════════════════════
-async function exportWord() {
+function exportWord() {
   guardarTodos();
   const v = getDatosVisita();
   const pInfo = PARQUES[v.parque] || {};
@@ -1405,26 +1402,10 @@ async function exportWord() {
     img{max-width:100%;height:auto;display:block;margin:4px auto}
   `;
 
-  // Convertir URL de mapa a base64 para que funcione en el doc offline
-  async function urlToBase64(url) {
-    try {
-      const resp = await fetch(url);
-      const blob = await resp.blob();
-      return new Promise(res => {
-        const r = new FileReader();
-        r.onload = () => res(r.result);
-        r.readAsDataURL(blob);
-      });
-    } catch(e) { return null; }
-  }
-
-  // Pre-convertir mapas
   toast('Generando Word…');
+  // Mapa: usar URL directa (Word de escritorio la carga; en móvil aparece vacío)
   const mapaB64 = {};
-  for (const c of cadaveres) {
-    const url = capturarImgMapa(c);
-    if (url) mapaB64[c.id] = await urlToBase64(url);
-  }
+  cadaveres.forEach(c => { const u = capturarImgMapa(c); if(u) mapaB64[c.id] = u; });
 
   let doc = `<html xmlns:o='urn:schemas-microsoft-com:office:office'
     xmlns:w='urn:schemas-microsoft-com:office:word'

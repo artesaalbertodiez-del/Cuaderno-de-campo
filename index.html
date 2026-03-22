@@ -228,13 +228,7 @@ input[type="file"] { display: none; }
             <option value="GUI">El Guijo</option>
           </select>
         </div>
-        <div class="campo" id="campo-sub" style="display:none">
-          <label>Subparque</label>
-          <select id="subparque" onchange="actualizarMunicipio()">
-            <option value="">—</option>
-            <option>Guijo I</option><option>Guijo II</option>
-          </select>
-        </div>
+
       </div>
       <div class="fila f2">
         <div class="campo">
@@ -571,9 +565,7 @@ function volverMenu() {
 // SUBPARQUE
 // ══════════════════════════════════════════════
 function actualizarSubparque() {
-  const p = document.getElementById('parque').value;
-  document.getElementById('campo-sub').style.display = p === 'GUI' ? 'block' : 'none';
-  if (p !== 'GUI') document.getElementById('subparque').value = '';
+  // Subparque ahora está en cada cadáver, no en datos generales
 }
 
 function actualizarMunicipio() {
@@ -588,12 +580,30 @@ function actualizarMunicipio() {
 // ══════════════════════════════════════════════
 // REFERENCIA
 // ══════════════════════════════════════════════
-function generarRef(num) {
-  const cod = document.getElementById('parque').value || 'XX';
+function generarRef(num, subparqueCad) {
+  const p = document.getElementById('parque').value || 'XX';
+  let cod = p;
+  if (p === 'GUI') {
+    if (subparqueCad === 'Guijo I') cod = 'GUI1';
+    else if (subparqueCad === 'Guijo II') cod = 'GUI2';
+    else cod = 'GUI';
+  }
   const f = document.getElementById('fecha').value;
   let fc = '';
   if (f) { const [y,m,d] = f.split('-'); fc = d + m + y.slice(2); }
   return `${cod}${num}/${fc}`;
+}
+
+function actualizarRefCadaver(id) {
+  const cad = cadaveres.find(c => c.id === id);
+  if (!cad) return;
+  const card = document.querySelector(`.cadaver-card[data-id="${id}"]`);
+  const subEl = card?.querySelector('[data-c="subparque_cad"]');
+  if (subEl) cad.subparque_cad = subEl.value;
+  cad.referencia = generarRef(cad.num, cad.subparque_cad);
+  const refEl = document.getElementById(`ref-${id}`);
+  if (refEl) refEl.value = cad.referencia;
+  actualizarInventario();
 }
 
 // ══════════════════════════════════════════════
@@ -1055,8 +1065,16 @@ function renderCadaveres() {
             <input type="number" data-c="tiempo_muerte" min="0" step="0.5" placeholder="Ej. 1" value="${cad.tiempo_muerte||''}">
           </div>
           <div class="campo"><label>Nº referencia</label>
-            <input type="text" data-c="referencia" value="${cad.referencia||''}" class="readonly" readonly>
+            <input type="text" data-c="referencia" id="ref-${cad.id}" value="${cad.referencia||''}" class="readonly" readonly>
           </div>
+          ${document.getElementById('parque')?.value === 'GUI' ? `
+          <div class="campo"><label>Subparque</label>
+            <select data-c="subparque_cad" onchange="actualizarRefCadaver(${cad.id})">
+              <option value="">— Seleccionar —</option>
+              <option value="Guijo I"${cad.subparque_cad==='Guijo I'?' selected':''}>Guijo I</option>
+              <option value="Guijo II"${cad.subparque_cad==='Guijo II'?' selected':''}>Guijo II</option>
+            </select>
+          </div>` : ''}
         </div>
 
         <div class="subsec">Datos de la especie</div>
@@ -1129,7 +1147,12 @@ function renderCadaveres() {
 
         <div class="fila f2" style="margin-top:10px">
           <div class="campo"><label>Distancia al aerogenerador</label>
-            <input type="text" data-c="distancia" placeholder="Ej. 16 m suroeste" value="${cad.distancia||''}">
+            <input type="text" data-c="distancia" placeholder="Ej. 16 metros" value="${cad.distancia||''}">
+          </div>
+          <div class="campo"><label>Dirección aerogenerador</label>
+            <select data-c="direccion_aero"><option value="">—</option>
+              ${sel(['N','NE','E','SE','S','SO','O','NO'], cad.direccion_aero||'')}
+            </select>
           </div>
           <div class="campo"><label>Causa probable</label>
             <select data-c="diagnostico"><option value="">—</option>
@@ -1160,11 +1183,6 @@ function renderCadaveres() {
           <div class="campo"><label>Infraestructura</label>
             <select data-c="infraestructura"><option value="">—</option>
               ${sel(['Aerogenerador','Torre meteorológica','Apoyo metálico','Cables conductores','Camino','Otros (Indicar en observaciones)'], cad.infraestructura||'')}
-            </select>
-          </div>
-          <div class="campo"><label>Dirección aerogenerador</label>
-            <select data-c="direccion_aero"><option value="">—</option>
-              ${sel(['N','NE','E','SE','S','SO','O','NO'], cad.direccion_aero||'')}
             </select>
           </div>
         </div>
@@ -1302,7 +1320,7 @@ function eliminarFoto(id,fi) {
 function getDatosVisita() {
   return {
     parque: document.getElementById('parque').value,
-    subparque: document.getElementById('subparque').value,
+    subparque: '',  // El subparque ahora está en cada cadáver
     municipio: document.getElementById('municipio').value,
     periodo: document.getElementById('periodo').value,
     fecha: document.getElementById('fecha').value,
@@ -1522,14 +1540,7 @@ ${fotosHtml}
 
   doc += '</body></html>';
 
-  const blob = new Blob([doc], {type: 'application/msword'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `Ficha_${(v.parque||'parque')}_${v.fecha||'fecha'}.doc`;
-  document.body.appendChild(a);
-  a.click();
-  setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 1500);
+  descargar(doc, `Ficha_${(v.parque||'parque')}_${v.fecha||'fecha'}.doc`, 'application/msword');
   toast('✓ Word descargado');
 }
 
@@ -1596,11 +1607,11 @@ function fmtFecha(f) {
 
 function limpiar() {
   if(!confirm('¿Limpiar todo el formulario?')) return;
-  ['parque','subparque','municipio','periodo','observador',
+  ['parque','municipio','periodo','observador',
    'temperatura','visibilidad','nubosidad','precipitacion','viento_dir','viento_vel']
    .forEach(id=>{const el=document.getElementById(id);if(el) el.value='';});
   document.getElementById('fecha').value=new Date().toISOString().split('T')[0];
-  document.getElementById('campo-sub').style.display='none';
+
   cadaveres=[]; nextId=1;
   renderCadaveres(); actualizarBadge(); actualizarInventario();
   toast('Formulario limpiado');

@@ -219,7 +219,7 @@ input[type="file"] { display: none; }
       <div class="fila f2">
         <div class="campo">
           <label>Parque eólico</label>
-          <select id="parque" onchange="actualizarSubparque()">
+          <select id="parque" onchange="actualizarSubparque(); actualizarMunicipio()">
             <option value="">— Seleccionar —</option>
             <option value="CE">Caramonte</option>
             <option value="AL">Alentisque</option>
@@ -230,7 +230,7 @@ input[type="file"] { display: none; }
         </div>
         <div class="campo" id="campo-sub" style="display:none">
           <label>Subparque</label>
-          <select id="subparque">
+          <select id="subparque" onchange="actualizarMunicipio()">
             <option value="">—</option>
             <option>Guijo I</option><option>Guijo II</option>
           </select>
@@ -245,7 +245,90 @@ input[type="file"] { display: none; }
           <label>Periodo</label>
           <select id="periodo">
             <option value="">— Seleccionar —</option>
-            <option>Enero (1ª quincena)</option><option>Enero (2ª quincena)</option><option>Febrero (1ª quincena)</option><option>Febrero (2ª quincena)</option><option>Marzo (1ª quincena)</option><option>Marzo (2ª quincena)</option><option>Abril (1ª quincena)</option><option>Abril (2ª quincena)</option><option>Mayo (1ª quincena)</option><option>Mayo (2ª quincena)</option><option>Junio (1ª quincena)</option><option>Junio (2ª quincena)</option><option>Julio (1ª quincena)</option><option>Julio (2ª quincena)</option><option>Agosto (1ª quincena)</option><option>Agosto (2ª quincena)</option><option>Septiembre (1ª quincena)</option><option>Septiembre (2ª quincena)</option><option>Octubre (1ª quincena)</option><option>Octubre (2ª quincena)</option><option>Noviembre (1ª quincena)</option><option>Noviembre (2ª quincena)</option><option>Diciembre (1ª quincena)</option><option>Diciembre (2ª quincena)</option>
+            <option>Enero (1ª Quincena)</option>
+            <option>Enero (2ª Quincena)</option>
+            <option>Enero (1ª semana)</option>
+            <option>Enero (2ª semana)</option>
+            <option>Enero (3ª semana)</option>
+            <option>Enero (4ª semana)</option>
+            <option>Enero (Mensual)</option>
+            <option>Febrero (1ª Quincena)</option>
+            <option>Febrero (2ª Quincena)</option>
+            <option>Febrero (1ª semana)</option>
+            <option>Febrero (2ª semana)</option>
+            <option>Febrero (3ª semana)</option>
+            <option>Febrero (4ª semana)</option>
+            <option>Febrero (Mensual)</option>
+            <option>Marzo (1ª Quincena)</option>
+            <option>Marzo (2ª Quincena)</option>
+            <option>Marzo (1ª semana)</option>
+            <option>Marzo (2ª semana)</option>
+            <option>Marzo (3ª semana)</option>
+            <option>Marzo (4ª semana)</option>
+            <option>Marzo (Mensual)</option>
+            <option>Abril (1ª Quincena)</option>
+            <option>Abril (2ª Quincena)</option>
+            <option>Abril (1ª semana)</option>
+            <option>Abril (2ª semana)</option>
+            <option>Abril (3ª semana)</option>
+            <option>Abril (4ª semana)</option>
+            <option>Abril (Mensual)</option>
+            <option>Mayo (1ª Quincena)</option>
+            <option>Mayo (2ª Quincena)</option>
+            <option>Mayo (1ª semana)</option>
+            <option>Mayo (2ª semana)</option>
+            <option>Mayo (3ª semana)</option>
+            <option>Mayo (4ª semana)</option>
+            <option>Mayo (Mensual)</option>
+            <option>Junio (1ª Quincena)</option>
+            <option>Junio (2ª Quincena)</option>
+            <option>Junio (1ª semana)</option>
+            <option>Junio (2ª semana)</option>
+            <option>Junio (3ª semana)</option>
+            <option>Junio (4ª semana)</option>
+            <option>Junio (Mensual)</option>
+            <option>Julio (1ª Quincena)</option>
+            <option>Julio (2ª Quincena)</option>
+            <option>Julio (1ª semana)</option>
+            <option>Julio (2ª semana)</option>
+            <option>Julio (3ª semana)</option>
+            <option>Julio (4ª semana)</option>
+            <option>Julio (Mensual)</option>
+            <option>Agosto (1ª Quincena)</option>
+            <option>Agosto (2ª Quincena)</option>
+            <option>Agosto (1ª semana)</option>
+            <option>Agosto (2ª semana)</option>
+            <option>Agosto (3ª semana)</option>
+            <option>Agosto (4ª semana)</option>
+            <option>Agosto (Mensual)</option>
+            <option>Septiembre (1ª Quincena)</option>
+            <option>Septiembre (2ª Quincena)</option>
+            <option>Septiembre (1ª semana)</option>
+            <option>Septiembre (2ª semana)</option>
+            <option>Septiembre (3ª semana)</option>
+            <option>Septiembre (4ª semana)</option>
+            <option>Septiembre (Mensual)</option>
+            <option>Octubre (1ª Quincena)</option>
+            <option>Octubre (2ª Quincena)</option>
+            <option>Octubre (1ª semana)</option>
+            <option>Octubre (2ª semana)</option>
+            <option>Octubre (3ª semana)</option>
+            <option>Octubre (4ª semana)</option>
+            <option>Octubre (Mensual)</option>
+            <option>Noviembre (1ª Quincena)</option>
+            <option>Noviembre (2ª Quincena)</option>
+            <option>Noviembre (1ª semana)</option>
+            <option>Noviembre (2ª semana)</option>
+            <option>Noviembre (3ª semana)</option>
+            <option>Noviembre (4ª semana)</option>
+            <option>Noviembre (Mensual)</option>
+            <option>Diciembre (1ª Quincena)</option>
+            <option>Diciembre (2ª Quincena)</option>
+            <option>Diciembre (1ª semana)</option>
+            <option>Diciembre (2ª semana)</option>
+            <option>Diciembre (3ª semana)</option>
+            <option>Diciembre (4ª semana)</option>
+            <option>Diciembre (Mensual)</option>
           </select>
         </div>
       </div>
@@ -257,6 +340,16 @@ input[type="file"] { display: none; }
         <div class="campo">
           <label>Observador</label>
           <input type="text" id="observador" placeholder="Nombre del observador">
+        </div>
+      </div>
+      <div class="fila f2">
+        <div class="campo">
+          <label>Hora de inicio</label>
+          <input type="time" id="hora_inicio">
+        </div>
+        <div class="campo">
+          <label>Hora de fin</label>
+          <input type="time" id="hora_fin">
         </div>
       </div>
     </div>
@@ -481,6 +574,15 @@ function actualizarSubparque() {
   const p = document.getElementById('parque').value;
   document.getElementById('campo-sub').style.display = p === 'GUI' ? 'block' : 'none';
   if (p !== 'GUI') document.getElementById('subparque').value = '';
+}
+
+function actualizarMunicipio() {
+  const p = document.getElementById('parque').value;
+  const info = PARQUES[p];
+  if (!info) return;
+  const elMun = document.getElementById('municipio');
+  // Solo autocompletar si está vacío o era del parque anterior
+  if (elMun) elMun.value = info.municipio || '';
 }
 
 // ══════════════════════════════════════════════
@@ -981,6 +1083,9 @@ function renderCadaveres() {
               ${sel(['Adulto','Juvenil','Inmaduro/subadulto','Cría','Indeterminado'], cad.edad||'')}
             </select>
           </div>
+          <div class="campo"><label>Hora</label>
+            <input type="time" data-c="hora" value="${cad.hora||''}">
+          </div>
         </div>
 
         <div class="subsec">Localización</div>
@@ -994,6 +1099,16 @@ function renderCadaveres() {
           <div class="campo"><label>Hábitat</label>
             <select data-c="habitat"><option value="">—</option>
               ${sel(['Forestal/Agroforestal','Arbustivos','Herbáceos: Prados, pastizales, turberas…','Riberas fluviales','Embalses, lagunas, charcas, albuferas','Cultivos agrícolas de secano','Cultivos agrícolas de regadío','Cultivos leñosos: Olivares, frutales, viñedos…'], cad.habitat||'')}
+            </select>
+          </div>
+          <div class="campo"><label>Estado cadáver</label>
+            <select data-c="estado_cadaver"><option value="">—</option>
+              ${sel(['Cadáver completo','Cadáver parcial','Ala/s','Plumas','Huesos'], cad.estado_cadaver||'')}
+            </select>
+          </div>
+          <div class="campo"><label>Estado descomposición</label>
+            <select data-c="estado_descomposicion"><option value="">—</option>
+              ${sel(['Fresco','Con signos de depredación','Descomposición avanzada'], cad.estado_descomposicion||'')}
             </select>
           </div>
         </div>
@@ -1024,6 +1139,11 @@ function renderCadaveres() {
               ${sel(['Colisión','Electrocución','Barotrauma','Atropello','Ajena a ENGIE','Indeterminada'], cad.diagnostico||'')}
             </select>
           </div>
+          <div class="campo"><label>Tamaño</label>
+            <select data-c="tamano"><option value="">—</option>
+              ${sel(['1','2','3','4','5'], cad.tamano||'')}
+            </select>
+          </div>
         </div>
 
         <div class="subsec" style="margin-top:12px">Descripción de los restos</div>
@@ -1043,6 +1163,11 @@ function renderCadaveres() {
           <div class="campo"><label>Infraestructura</label>
             <select data-c="infraestructura"><option value="">—</option>
               ${sel(['Aerogenerador','Torre meteorológica','Apoyo metálico','Cables conductores','Camino','Otros (Indicar en observaciones)'], cad.infraestructura||'')}
+            </select>
+          </div>
+          <div class="campo"><label>Dirección aerogenerador</label>
+            <select data-c="direccion_aero"><option value="">—</option>
+              ${sel(['N','NE','E','SE','S','SO','O','NO'], cad.direccion_aero||'')}
             </select>
           </div>
         </div>
@@ -1184,6 +1309,8 @@ function getDatosVisita() {
     municipio: document.getElementById('municipio').value,
     periodo: document.getElementById('periodo').value,
     fecha: document.getElementById('fecha').value,
+    hora_inicio: document.getElementById('hora_inicio').value,
+    hora_fin: document.getElementById('hora_fin').value,
     observador: document.getElementById('observador').value,
     temperatura: document.getElementById('temperatura').value,
     visibilidad: document.getElementById('visibilidad').value,
@@ -1250,7 +1377,7 @@ function capturarImgMapa(cad) {
 // ══════════════════════════════════════════════
 // EXPORTAR WORD
 // ══════════════════════════════════════════════
-function exportWord() {
+async function exportWord() {
   guardarTodos();
   const v = getDatosVisita();
   const pInfo = PARQUES[v.parque] || {};
@@ -1275,8 +1402,29 @@ function exportWord() {
     .sub{font-size:8pt;color:#546e7a;font-weight:bold;text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:2px}
     .pb{page-break-before:always}
     em{font-style:italic}
-    img{max-width:100%;height:auto}
+    img{max-width:100%;height:auto;display:block;margin:4px auto}
   `;
+
+  // Convertir URL de mapa a base64 para que funcione en el doc offline
+  async function urlToBase64(url) {
+    try {
+      const resp = await fetch(url);
+      const blob = await resp.blob();
+      return new Promise(res => {
+        const r = new FileReader();
+        r.onload = () => res(r.result);
+        r.readAsDataURL(blob);
+      });
+    } catch(e) { return null; }
+  }
+
+  // Pre-convertir mapas
+  toast('Generando Word…');
+  const mapaB64 = {};
+  for (const c of cadaveres) {
+    const url = capturarImgMapa(c);
+    if (url) mapaB64[c.id] = await urlToBase64(url);
+  }
 
   let doc = `<html xmlns:o='urn:schemas-microsoft-com:office:office'
     xmlns:w='urn:schemas-microsoft-com:office:word'
@@ -1286,10 +1434,12 @@ function exportWord() {
 <div class="enc">${encabezadoCampo}</div>
 
 <table>
-<tr><th colspan="4">Datos generales</th></tr>
+<tr><th colspan="6">Datos generales</th></tr>
 <tr>
   <td colspan="2"><span class="sub">Visita correspondiente al mes de</span>${v.periodo||'—'}</td>
   <td><span class="sub">Fecha</span>${fmtFecha(v.fecha)}</td>
+  <td><span class="sub">Hora inicio</span>${v.hora_inicio||'—'}</td>
+  <td><span class="sub">Hora fin</span>${v.hora_fin||'—'}</td>
   <td><span class="sub">Observador</span>${v.observador||'—'}</td>
 </tr>
 </table>
@@ -1317,22 +1467,30 @@ ${cadaveres.length ? cadaveres.map(c=>`
 </tr>`).join('') : '<tr><td colspan="4" style="text-align:center;color:#999;font-style:italic">Sin cadáveres registrados</td></tr>'}
 </table>`;
 
-  cadaveres.forEach((c) => {
-    const imgMapa = capturarImgMapa(c);
+  for (const c of cadaveres) {
+    const imgMapa = mapaB64[c.id] || null;
+    const fotosHtml = c.fotos.length
+      ? `<table><tr><th colspan="2">Fotografías</th></tr>${
+          c.fotos.reduce((acc,f,i)=>{
+            if(i%2===0) acc.push([f]);
+            else acc[acc.length-1].push(f);
+            return acc;
+          },[]).map(par=>`<tr>${par.map(f=>`<td style="text-align:center;padding:6px;width:50%"><img src="${f}" style="max-width:220px;max-height:180px"></td>`).join('')}</tr>`).join('')
+        }</table>`
+      : '';
+
     doc += `
 <div class="pb"></div>
 <div class="enc">${encabezadoRestos}</div>
 
 <table>
-<tr><th colspan="4">Datos generales</th></tr>
+<tr><th colspan="6">Datos generales</th></tr>
 <tr>
   <td colspan="2"><span class="sub">Parque eólico</span>${pFull}</td>
   <td><span class="sub">Término municipal</span>${municipio}</td>
   <td><span class="sub">Fecha</span>${fmtFecha(v.fecha)}</td>
-</tr>
-<tr>
-  <td colspan="3"><span class="sub">Tiempo estimado desde la muerte</span>${c.tiempo_muerte||'—'}</td>
-  <td></td>
+  <td><span class="sub">Hora</span>${c.hora||'—'}</td>
+  <td><span class="sub">Tiempo desde la muerte</span>${c.tiempo_muerte||'—'}</td>
 </tr>
 </table>
 
@@ -1345,7 +1503,9 @@ ${cadaveres.length ? cadaveres.map(c=>`
 </tr>
 <tr>
   <td><span class="sub">Edad</span>${c.edad||'—'}</td>
-  <td colspan="3"></td>
+  <td><span class="sub">Tamaño</span>${c.tamano||'—'}</td>
+  <td><span class="sub">Estado cadáver</span>${c.estado_cadaver||'—'}</td>
+  <td><span class="sub">Estado descomposición</span>${c.estado_descomposicion||'—'}</td>
 </tr>
 </table>
 
@@ -1353,8 +1513,9 @@ ${cadaveres.length ? cadaveres.map(c=>`
 <tr><th colspan="4">Localización</th></tr>
 <tr>
   <td><span class="sub">Nº aerogenerador</span>${c.aerogenerador||'—'}</td>
+  <td><span class="sub">Dirección</span>${c.direccion_aero||'—'}</td>
   <td><span class="sub">Hábitat</span>${c.habitat||'—'}</td>
-  <td colspan="2"><span class="sub">Coordenadas UTM ETRS89</span>X: ${c.utmX||'—'} &nbsp; Y: ${c.utmY||'—'}</td>
+  <td><span class="sub">Coordenadas UTM ETRS89</span>X: ${c.utmX||'—'} Y: ${c.utmY||'—'}</td>
 </tr>
 <tr>
   <td colspan="2"><span class="sub">Distancia al aerogenerador</span>${c.distancia||'—'}</td>
@@ -1367,20 +1528,19 @@ ${cadaveres.length ? cadaveres.map(c=>`
 <tr><td colspan="4"><span class="sub">Observaciones</span>${c.observaciones||'—'}</td></tr>
 </table>
 
-${imgMapa ? `<table><tr><th>Localización en mapa</th></tr><tr><td style="text-align:center"><img src="${imgMapa}" style="max-width:500px;border:1px solid #ccc"></td></tr></table>` : ''}
+${imgMapa ? `<table><tr><th>Localización en mapa</th></tr><tr><td style="text-align:center"><img src="${imgMapa}" style="max-width:480px"></td></tr></table>` : ''}
 
 <table>
 <tr><th>Descripción de los restos</th></tr>
 <tr><td style="min-height:60px">${c.descripcion||'—'}</td></tr>
 </table>
 
-${c.fotos.length ? `<table><tr><th colspan="${c.fotos.length}">Fotografías</th></tr><tr>${c.fotos.map(f=>`<td style="text-align:center;padding:4px"><img src="${f}" style="max-width:180px;max-height:150px;display:block;margin:0 auto"></td>`).join('')}</tr></table>` : ''}
+${fotosHtml}
 `;
-  });
+  }
 
   doc += '</body></html>';
 
-  // Fix descarga en iOS Safari y Chrome
   const blob = new Blob([doc], {type: 'application/msword'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -1388,7 +1548,7 @@ ${c.fotos.length ? `<table><tr><th colspan="${c.fotos.length}">Fotografías</th>
   a.download = `Ficha_${(v.parque||'parque')}_${v.fecha||'fecha'}.doc`;
   document.body.appendChild(a);
   a.click();
-  setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 1000);
+  setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 1500);
   toast('✓ Word descargado');
 }
 

@@ -354,43 +354,43 @@ input[type="file"] { display: none; }
 const PARQUES = {
   CE: {
     nombre: 'Parque Eólico Caramonte',
-    xMin: 546288.058, xMax: 549383.689,
-    yMin: 4549884.090, yMax: 4554503.725,
+    municipio: 'Medinaceli', provincia: 'Soria',
+    swLat: 41.09891558, swLng: -2.44879322,
+    neLat: 41.14034503, neLng: -2.41156014,
     imgW: 1828, imgH: 2728,
-    imgSrc: 'PE_Caramonte.jpg',
-    img: null
+    imgSrc: 'PE_Caramonte.jpg', img: null
   },
   AL: {
     nombre: 'Parque Eólico Alentisque',
-    xMin: 553806.529, xMax: 558719.851,
-    yMin: 4581744.771, yMax: 4588333.604,
+    municipio: 'Alentisque', provincia: 'Soria',
+    swLat: 41.38543097, swLng: -2.35645764,
+    neLat: 41.44443236, neLng: -2.29705733,
     imgW: 2034, imgH: 2728,
-    imgSrc: 'PE_Alentisque.jpg',
-    img: null
+    imgSrc: 'PE_Alentisque.jpg', img: null
   },
   PA: {
     nombre: 'Parque Eólico Parideras',
-    xMin: 541864.715, xMax: 543940.491,
-    yMin: 4562458.409, yMax: 4565390.695,
+    municipio: 'Medinaceli', provincia: 'Soria',
+    swLat: 41.21242061, swLng: -2.50060631,
+    neLat: 41.23872317, neLng: -2.47563492,
     imgW: 1931, imgH: 2728,
-    imgSrc: 'PE_Parideras.jpg',
-    img: null
+    imgSrc: 'PE_Parideras.jpg', img: null
   },
   CA: {
     nombre: 'Parque Eólico Carrascalejo',
-    xMin: 543616.489, xMax: 546622.162,
-    yMin: 4546758.727, yMax: 4551378.361,
+    municipio: 'Medinaceli', provincia: 'Soria',
+    swLat: 41.07091092, swLng: -2.48082711,
+    neLat: 41.11235633, neLng: -2.44470144,
     imgW: 1775, imgH: 2728,
-    imgSrc: 'PE_Carrascalejo.jpg',
-    img: null
+    imgSrc: 'PE_Carrascalejo.jpg', img: null
   },
   GUI: {
     nombre: 'Parque Eólico El Guijo',
-    xMin: 568185.576, xMax: 572842.153,
-    yMin: 4532623.195, yMax: 4538955.270,
+    municipio: 'Mazarete y Anquela de Ducado', provincia: 'Guadalajara',
+    swLat: 40.94189900, swLng: -2.18996169,
+    neLat: 40.99853175, neLng: -2.13390228,
     imgW: 2006, imgH: 2728,
-    imgSrc: 'PE_Guijo.jpg',
-    img: null
+    imgSrc: 'PE_Guijo.jpg', img: null
   }
 };
 
@@ -403,6 +403,16 @@ Object.values(PARQUES).forEach(parque => {
   img.onerror = () => { console.warn(`No se pudo cargar la ortofoto: ${parque.imgSrc}`); };
 });
 
+function autoEspecie(id, nombreComun) {
+  const par = ESPECIES.find(([c]) => c === nombreComun);
+  const cientifico = par ? par[1] : '';
+  const el = document.getElementById(`cientifico-${id}`);
+  if (el) el.value = cientifico;
+  const cad = cadaveres.find(c => c.id === id);
+  if (cad) cad.especie_cientifico = cientifico;
+  actualizarInventario();
+}
+
 function getParqueActual() {
   const cod = document.getElementById('parque')?.value;
   return cod ? PARQUES[cod] || null : null;
@@ -410,13 +420,11 @@ function getParqueActual() {
 
 function crearOverlayParque(map, parqueCod) {
   const parque = PARQUES[parqueCod];
-  if (!parque?.xMin || !parque?.imgSrc) return null;
+  if (!parque?.swLat || !parque?.imgSrc) return null;
 
-  const sw = utmToWgs84(parque.xMin, parque.yMin);
-  const ne = utmToWgs84(parque.xMax, parque.yMax);
   const bounds = new google.maps.LatLngBounds(
-    new google.maps.LatLng(sw.lat, sw.lng),
-    new google.maps.LatLng(ne.lat, ne.lng)
+    new google.maps.LatLng(parque.swLat, parque.swLng),
+    new google.maps.LatLng(parque.neLat, parque.neLng)
   );
 
   const overlay = new google.maps.GroundOverlay(parque.imgSrc, bounds, { opacity: 0.85 });
@@ -509,6 +517,271 @@ function wgs84ToUtm(lat, lon) {
 // MAPA GOOGLE MAPS JAVASCRIPT API
 // ══════════════════════════════════════════════
 const GMAPS_STATIC_KEY = 'AIzaSyBFgl5TwEQcgCmjFzxWoLSGAEOwHEkOdnw';
+
+// Aerogeneradores por parque
+const AEROGENERADORES = {
+  CE:  Array.from({length:22},(_,i)=>i+1),
+  AL:  Array.from({length:31},(_,i)=>i+1),
+  PA:  Array.from({length:11},(_,i)=>i+1), // Parideras — ajusta si es diferente
+  CA:  Array.from({length:11},(_,i)=>i+1),
+  'GUI-I':  Array.from({length:19},(_,i)=>i+1),
+  'GUI-II': Array.from({length:13},(_,i)=>i+1),
+};
+
+// Especies (nombre común → nombre científico)
+const ESPECIES = [
+  ['Zampullín común','Tachybaptus ruficollis'],
+  ['Somormujo lavanco','Podiceps cristatus'],
+  ['Zampullín cuellinegro','Podiceps nigricollis'],
+  ['Cormorán grande','Phalacrocorax carbo'],
+  ['Avetorillo común','Ixobrychus minutus'],
+  ['Martinete común','Nycticorax nycticorax'],
+  ['Garcilla bueyera','Bubulcus ibis'],
+  ['Garceta común','Egretta garzetta'],
+  ['Garceta grande','Egretta alba'],
+  ['Garza real','Ardea cinerea'],
+  ['Garza imperial','Ardea purpurea'],
+  ['Cigüeña blanca','Ciconia ciconia'],
+  ['Cigüeña negra','Ciconia nigra'],
+  ['Ánsar común','Anser anser'],
+  ['Ánade friso','Anas strepera'],
+  ['Cerceta común','Anas crecca'],
+  ['Ánade azulón','Anas platyrhynchos'],
+  ['Ánade rabudo norteño','Anas acuta'],
+  ['Cuchara común','Anas clypeata'],
+  ['Pato colorado','Netta rufina'],
+  ['Porrón europeo','Aythya ferina'],
+  ['Abejero europeo','Pernis apivorus'],
+  ['Elanio común','Elanus caeruleus'],
+  ['Milano negro','Milvus migrans'],
+  ['Milano real','Milvus milvus'],
+  ['Quebrantahuesos','Gypaetus barbatus'],
+  ['Alimoche común','Neophron percnopterus'],
+  ['Buitre leonado','Gyps fulvus'],
+  ['Buitre negro','Aegypius monachus'],
+  ['Culebrera europea','Circaetus gallicus'],
+  ['Aguilucho lagunero occidental','Circus aeruginosus'],
+  ['Aguilucho pálido','Circus cyaneus'],
+  ['Aguilucho cenizo','Circus pygargus'],
+  ['Azor común','Accipiter gentilis'],
+  ['Gavilán común','Accipiter nisus'],
+  ['Busardo ratonero','Buteo buteo'],
+  ['Águila imperial ibérica','Aquila adalberti'],
+  ['Águila real','Aquila chrysaetos'],
+  ['Águila calzada','Hieraaetus pennatus'],
+  ['Águila perdicera','Aquila fasciata'],
+  ['Águila pescadora','Pandion haliaetus'],
+  ['Cernícalo primilla','Falco naumanni'],
+  ['Cernícalo vulgar','Falco tinnunculus'],
+  ['Cernícalo patirrojo','Falco vespertinus'],
+  ['Esmerejón','Falco columbarius'],
+  ['Alcotán europeo','Falco subbuteo'],
+  ['Halcón peregrino','Falco peregrinus'],
+  ['Perdiz roja','Alectoris rufa'],
+  ['Perdiz pardilla','Perdix perdix'],
+  ['Codorniz común','Coturnix coturnix'],
+  ['Faisán vulgar','Phasianus colchicus'],
+  ['Rascón europeo','Rallus aquaticus'],
+  ['Gallineta común','Gallinula chloropus'],
+  ['Focha común','Fulica atra'],
+  ['Grulla común','Grus grus'],
+  ['Sisón común','Tetrax tetrax'],
+  ['Avutarda euroasiática','Otis tarda'],
+  ['Cigüeñuela común','Himantopus himantopus'],
+  ['Alcaraván común','Burhinus oedicnemus'],
+  ['Chorlitejo chico','Charadrius dubius'],
+  ['Chorlitejo grande','Charadrius hiaticula'],
+  ['Chorlito gris','Pluvialis squatarola'],
+  ['Chorlito carambolo','Charadrius morinellus'],
+  ['Avefría europea','Vanellus vanellus'],
+  ['Chocha perdiz','Scolopax rusticola'],
+  ['Andarríos grande','Tringa ochropus'],
+  ['Andarríos chico','Actitis hypoleucos'],
+  ['Gaviota cabecinegra','Larus melanocephalus'],
+  ['Gaviota reidora','Larus ridibundus'],
+  ['Gaviota sombría','Larus fuscus'],
+  ['Charrán común','Sterna hirundo'],
+  ['Ganga ortega','Pterocles orientalis'],
+  ['Ganga ibérica','Pterocles alchata'],
+  ['Paloma bravía','Columba livia'],
+  ['Paloma doméstica','Columba livia fam domestica'],
+  ['Paloma zurita','Columba oenas'],
+  ['Paloma torcaz','Columba palumbus'],
+  ['Tórtola turca','Streptopelia decaocto'],
+  ['Tórtola europea','Streptopelia turtur'],
+  ['Cotorra argentina','Myiopsitta monachus'],
+  ['Críalo europeo','Clamator glandarius'],
+  ['Cuco','Cuculus canorus'],
+  ['Lechuza común','Tyto alba'],
+  ['Autillo europeo','Otus scops'],
+  ['Búho real','Bubo bubo'],
+  ['Mochuelo europeo','Athene noctua'],
+  ['Cárabo común','Strix aluco'],
+  ['Búho chico','Asio otus'],
+  ['Búho campestre','Asio flammeus'],
+  ['Chotacabras europeo','Caprimulgus europaeus'],
+  ['Chotacabras cuellirrojo','Caprimulgus ruficollis'],
+  ['Vencejo común','Apus apus'],
+  ['Vencejo real','Tachymarptis melba'],
+  ['Martín pescador común','Alcedo atthis'],
+  ['Abejaruco europeo','Merops apiaster'],
+  ['Carraca europea','Coracias garrulus'],
+  ['Abubilla','Upupa epops'],
+  ['Torcecuello euroasiático','Jynx torquilla'],
+  ['Pito real ibérico','Picus sharpei'],
+  ['Pico picapinos','Dendrocopos major'],
+  ['Pico menor','Dryobates minor'],
+  ['Alondra ricotí','Chersophilus duponti'],
+  ['Calandria común','Melanocorypha calandra'],
+  ['Terrera común','Calandrella brachydactyla'],
+  ['Terrera marismeña','Calandrella rufescens'],
+  ['Cogujada común','Galerida cristata'],
+  ['Cogujada montesina','Galerida theklae'],
+  ['Cogujada sp.',''],
+  ['Alondra totovía','Lullula arborea'],
+  ['Alondra común','Alauda arvensis'],
+  ['Avión zapador','Riparia riparia'],
+  ['Avión roquero','Ptyonoprogne rupestris'],
+  ['Golondrina común','Hirundo rustica'],
+  ['Golondrina dáurica','Hirundo daurica'],
+  ['Avión común occidental','Delichon urbicum'],
+  ['Bisbita campestre','Anthus campestris'],
+  ['Bisbita arbóreo','Anthus trivialis'],
+  ['Bisbita pratense','Anthus pratensis'],
+  ['Bisbita alpino','Anthus spinoletta'],
+  ['Lavandera boyera','Motacilla flava'],
+  ['Lavandera cascadeña','Motacilla cinerea'],
+  ['Lavandera blanca','Motacilla alba'],
+  ['Mirlo acuático europeo','Cinclus cinclus'],
+  ['Chochín paleártico','Troglodytes troglodytes'],
+  ['Acentor común','Prunella modularis'],
+  ['Acentor alpino','Prunella collaris'],
+  ['Petirrojo europeo','Erithacus rubecula'],
+  ['Ruiseñor común','Luscinia megarhynchos'],
+  ['Ruiseñor pechiazul','Luscinia svecica'],
+  ['Colirrojo tizón','Phoenicurus ochruros'],
+  ['Colirrojo real','Phoenicurus phoenicurus'],
+  ['Tarabilla norteña','Saxicola rubetra'],
+  ['Tarabilla europea','Saxicola rubicola'],
+  ['Collalba gris','Oenanthe oenanthe'],
+  ['Collalba rubia occidental','Oenanthe hispanica'],
+  ['Collalba negra','Oenanthe leucura'],
+  ['Roquero rojo','Monticola saxatilis'],
+  ['Roquero solitario','Monticola solitarius'],
+  ['Mirlo capiblanco','Turdus torquatus'],
+  ['Mirlo común','Turdus merula'],
+  ['Zorzal real','Turdus pilaris'],
+  ['Zorzal común','Turdus philomelos'],
+  ['Zorzal alirrojo','Turdus iliacus'],
+  ['Zorzal charlo','Turdus viscivorus'],
+  ['Cetia ruiseñor','Cettia cetti'],
+  ['Cistícola buitrón','Cisticola juncidis'],
+  ['Buscarla pintoja','Locustella naevia'],
+  ['Carricerín común','Acrocephalus schoenobaenus'],
+  ['Carricerín real','Acrocephalus melanopogon'],
+  ['Carricero común','Acrocephalus scirpaceus'],
+  ['Carricero tordal','Acrocephalus arundinaceus'],
+  ['Zarcero pálido','Hippolais pallida'],
+  ['Zarcero políglota','Hippolais polyglotta'],
+  ['Curruca rabilarga','Curruca undata'],
+  ['Curruca tomillera','Curruca conspicillata'],
+  ['Curruca carrasqueña occidental','Curruca iberiae'],
+  ['Curruca cabecinegra','Curruca melanocephala'],
+  ['Curruca mirlona','Curruca hortensis'],
+  ['Curruca zarcera','Curruca communis'],
+  ['Curruca mosquitera','Sylvia borin'],
+  ['Curruca capirotada','Sylvia atricapilla'],
+  ['Mosquitero papialbo','Phylloscopus bonelli'],
+  ['Mosquitero común','Phylloscopus collybita'],
+  ['Mosquitero sp.','Phylloscopus sp.'],
+  ['Mosquitero ibérico','Phylloscopus ibericus'],
+  ['Mosquitero musical','Phylloscopus trochilus'],
+  ['Reyezuelo sencillo','Regulus regulus'],
+  ['Reyezuelo listado','Regulus ignicapillus'],
+  ['Papamoscas gris','Muscicapa striata'],
+  ['Papamoscas cerrojillo','Ficedula hypoleuca'],
+  ['Bigotudo','Panurus biarmicus'],
+  ['Mito común','Aegithalos caudatus'],
+  ['Carbonero palustre','Parus palustris'],
+  ['Herrerillo capuchino','Lophophanes cristatus'],
+  ['Carbonero garrapinos','Parus ater'],
+  ['Herrerillo común','Cyanistes caeruleus'],
+  ['Carbonero común','Parus major'],
+  ['Trepador azul','Sitta europaea'],
+  ['Agateador euroasiático','Certhia familiaris'],
+  ['Agateador europeo','Certhia brachydactyla'],
+  ['Pájaro moscón europeo','Remiz pendulinus'],
+  ['Oropéndola europea','Oriolus oriolus'],
+  ['Alcaudón dorsirrojo','Lanius collurio'],
+  ['Alcaudón real','Lanius meridionalis'],
+  ['Alcaudón común','Lanius senator'],
+  ['Arrendajo euroasiático','Garrulus glandarius'],
+  ['Rabilargo ibérico','Cyanopica cooki'],
+  ['Urraca común','Pica pica'],
+  ['Chova piquirroja','Pyrrhocorax pyrrhocorax'],
+  ['Grajilla occidental','Corvus monedula'],
+  ['Corneja negra','Corvus corone'],
+  ['Cuervo grande','Corvus corax'],
+  ['Estornino pinto','Sturnus vulgaris'],
+  ['Estornino negro','Sturnus unicolor'],
+  ['Gorrión común','Passer domesticus'],
+  ['Gorrión moruno','Passer hispaniolensis'],
+  ['Gorrión molinero','Passer montanus'],
+  ['Gorrión chillón','Petronia petronia'],
+  ['Pinzón vulgar','Fringilla coelebs'],
+  ['Pinzón real','Fringilla montifringilla'],
+  ['Serín verdecillo','Serinus serinus'],
+  ['Verderón serrano','Carduelis citrinella'],
+  ['Verderón común','Chloris chloris'],
+  ['Jilguero europeo','Carduelis carduelis'],
+  ['Jilguero lúgano','Spinus spinus'],
+  ['Pardillo común','Linaria cannabina'],
+  ['Piquituerto común','Loxia curvirostra'],
+  ['Camachuelo común','Pyrrhula pyrrhula'],
+  ['Picogordo','Coccothraustes coccothraustes'],
+  ['Escribano cerillo','Emberiza citrinella'],
+  ['Escribano soteño','Emberiza cirlus'],
+  ['Escribano montesino','Emberiza cia'],
+  ['Escribano hortelano','Emberiza hortulana'],
+  ['Escribano palustre','Emberiza schoeniclus'],
+  ['Escribano triguero','Emberiza calandra'],
+  ['Escribano nival','Plectrophenax nivalis'],
+  ['Sin observaciones',''],
+  ['Ave grande',''],
+  ['Ave mediana',''],
+  ['Ave pequeña',''],
+  ['Rapaz sin identificar',''],
+  ['Paseriforme',''],
+  ['Murciélago grande de herradura','Rhinolophus ferrumequinum'],
+  ['Murciélago pequeño de herradura','Rhinolophus hipposideros'],
+  ['Murciélago mediterráneo de herradura','Rhinolophus euryale'],
+  ['Murciélago mediano de herradura','Rhinolophus mehelyi'],
+  ['Murciélago ratonero forestal','Myotis bechsteinii'],
+  ['Murciélago ratonero grande','Myotis myotis'],
+  ['Murciélago ratonero mediano','Myotis blythii'],
+  ['Murciélago ratonero gris','Myotis nattereri'],
+  ['Murciélago ratonero pardo','Myotis emarginatus'],
+  ['Murciélago ratonero bigotudo','Myotis mystacinus'],
+  ['Murciélago ratonero ribereño','Myotis daubentonii'],
+  ['Murciélago enano','Pipistrellus pipistrellus'],
+  ['Murciélago de Cabrera','Pipistrellus pygmaeus'],
+  ['Murciélago de Nathusius','Pipistrellus nathusii'],
+  ['Murciélago de borde claro','Pipistrellus kuhlii'],
+  ['Murciélago montañero','Hypsugo savii'],
+  ['Nóctulo pequeño','Nyctalus leisleri'],
+  ['Nóctulo mediano','Nyctalus noctula'],
+  ['Nóctulo grande','Nyctalus lasiopterus'],
+  ['Murciélago hortelano','Eptesicus serotinus'],
+  ['Murciélago barbastela','Barbastella barbastellus'],
+  ['Orejudo dorado','Plecotus auritus'],
+  ['Orejudo gris','Plecotus austriacus'],
+  ['Murciélago de cueva','Miniopterus schreibersii'],
+  ['Murciélago rabudo','Tadarida teniotis'],
+  ['Murciélago (sin especificar)',''],
+  ['Pipistrellus sp.',''],
+  ['Quiróptero',''],
+  ['Hypsugo/Pipistrellus',''],
+];
 
 // UTM 30N → WGS84 (para posicionar la ortofoto)
 function utmToWgs84(x, y) {
@@ -690,19 +963,22 @@ function renderCadaveres() {
         <div class="subsec">Datos de la especie</div>
         <div class="fila f2">
           <div class="campo"><label>Especie (nombre común)</label>
-            <input type="text" data-c="especie_comun" placeholder="Ej. Calandria común" value="${cad.especie_comun||''}" oninput="actualizarInventario()">
+            <select data-c="especie_comun" onchange="autoEspecie(${cad.id},this.value)" oninput="actualizarInventario()">
+              <option value="">— Seleccionar —</option>
+              ${ESPECIES.map(([c,s])=>`<option value="${c}"${cad.especie_comun===c?' selected':''}>${c}</option>`).join('')}
+            </select>
           </div>
           <div class="campo"><label>Nombre científico</label>
-            <input type="text" data-c="especie_cientifico" placeholder="Ej. Melanocorypha calandra" value="${cad.especie_cientifico||''}" style="font-style:italic">
+            <input type="text" data-c="especie_cientifico" id="cientifico-${cad.id}" value="${cad.especie_cientifico||''}" style="font-style:italic" placeholder="Se rellena automáticamente">
           </div>
           <div class="campo"><label>Sexo</label>
             <select data-c="sexo"><option value="">—</option>
-              ${sel(['Macho','Hembra','Desconocido'], cad.sexo||'')}
+              ${sel(['Macho','Hembra','Indeterminado'], cad.sexo||'')}
             </select>
           </div>
           <div class="campo"><label>Edad</label>
             <select data-c="edad"><option value="">—</option>
-              ${sel(['Adulto','Juvenil','Pollo','Desconocido'], cad.edad||'')}
+              ${sel(['Adulto','Juvenil','Inmaduro/subadulto','Cría','Indeterminado'], cad.edad||'')}
             </select>
           </div>
         </div>
@@ -710,11 +986,14 @@ function renderCadaveres() {
         <div class="subsec">Localización</div>
         <div class="fila f2" style="margin-bottom:8px">
           <div class="campo"><label>Nº de aerogenerador</label>
-            <input type="text" data-c="aerogenerador" placeholder="Ej. A4" value="${cad.aerogenerador||''}" oninput="actualizarInventario()">
+            <select data-c="aerogenerador" onchange="actualizarInventario()">
+              <option value="">—</option>
+              ${(()=>{ const p=document.getElementById('parque')?.value; const sub=document.getElementById('subparque')?.value; const key = p==='GUI'?(sub==='Guijo II'?'GUI-II':'GUI-I'):p; return (AEROGENERADORES[key]||[]).map(n=>`<option value="${n}"${cad.aerogenerador==n?' selected':''}>${n}</option>`).join(''); })()}
+            </select>
           </div>
           <div class="campo"><label>Hábitat</label>
             <select data-c="habitat"><option value="">—</option>
-              ${sel(['Cultivos agrícolas','Matorral','Pastizal','Bosque','Roquedo','Zona húmeda','Otro'], cad.habitat||'')}
+              ${sel(['Forestal/Agroforestal','Arbustivos','Herbáceos: Prados, pastizales, turberas…','Riberas fluviales','Embalses, lagunas, charcas, albuferas','Cultivos agrícolas de secano','Cultivos agrícolas de regadío','Cultivos leñosos: Olivares, frutales, viñedos…'], cad.habitat||'')}
             </select>
           </div>
         </div>
@@ -740,9 +1019,9 @@ function renderCadaveres() {
           <div class="campo"><label>Distancia al aerogenerador</label>
             <input type="text" data-c="distancia" placeholder="Ej. 16 m suroeste" value="${cad.distancia||''}">
           </div>
-          <div class="campo"><label>Diagnóstico de mortandad</label>
+          <div class="campo"><label>Causa probable</label>
             <select data-c="diagnostico"><option value="">—</option>
-              ${sel(['Colisión con aerogenerador','Barotrauma','Indeterminada','Otra causa'], cad.diagnostico||'')}
+              ${sel(['Colisión','Electrocución','Barotrauma','Atropello','Ajena a ENGIE','Indeterminada'], cad.diagnostico||'')}
             </select>
           </div>
         </div>
@@ -754,6 +1033,18 @@ function renderCadaveres() {
         <div class="campo" style="margin-bottom:12px">
           <label>Observaciones</label>
           <input type="text" data-c="observaciones" placeholder="Ej. Depositado en arcón congelador..." value="${cad.observaciones||''}">
+        </div>
+        <div class="fila f2" style="margin-bottom:12px">
+          <div class="campo"><label>Actuaciones</label>
+            <select data-c="actuaciones"><option value="">—</option>
+              ${sel(['Retirada a arcón congelador','Otra'], cad.actuaciones||'')}
+            </select>
+          </div>
+          <div class="campo"><label>Infraestructura</label>
+            <select data-c="infraestructura"><option value="">—</option>
+              ${sel(['Aerogenerador','Torre meteorológica','Apoyo metálico','Cables conductores','Camino','Otros (Indicar en observaciones)'], cad.infraestructura||'')}
+            </select>
+          </div>
         </div>
 
         <div class="subsec">Fotografías</div>
@@ -962,52 +1253,59 @@ function capturarImgMapa(cad) {
 function exportWord() {
   guardarTodos();
   const v = getDatosVisita();
-  const pNombre = PARQUES[v.parque]?.nombre || v.parque;
-  const pFull = v.subparque ? `${pNombre} — ${v.subparque}` : pNombre;
+  const pInfo = PARQUES[v.parque] || {};
+  const pNombre = pInfo.nombre || v.parque || '—';
+  const pNombreMayus = pNombre.toUpperCase().replace('PARQUE EÓLICO','PARQUE EOLICO');
+  const municipio = v.municipio || pInfo.municipio || '—';
+  const provincia = pInfo.provincia || '—';
+  const municipioMayus = municipio.toUpperCase();
+  const provinciaMayus = provincia.toUpperCase();
+  const subparque = v.subparque || '';
+  const pFull = subparque ? `${pNombre} — ${subparque}` : pNombre;
 
-  let html = `<html xmlns:o='urn:schemas-microsoft-com:office:office'
+  const encabezadoCampo = `FICHA DE CAMPO SEGUIMIENTO AMBIENTAL ${pNombreMayus}<br>TÉRMINO MUNICIPAL DE ${municipioMayus} (${provinciaMayus})`;
+  const encabezadoRestos = `FICHA DE RESTOS SEGUIMIENTO AMBIENTAL ${pNombreMayus}<br>TÉRMINO MUNICIPAL DE ${municipioMayus} (${provinciaMayus})`;
+
+  const css = `
+    body{font-family:Arial,sans-serif;font-size:10pt;margin:2cm}
+    .enc{font-size:12pt;font-weight:bold;text-align:center;border:2px solid #1a5c20;padding:8px 12px;margin-bottom:14px;background:#f1f8e9;color:#1a5c20}
+    table{border-collapse:collapse;width:100%;margin-bottom:8px}
+    th{background:#2e7d32;color:white;font-weight:bold;font-size:9pt;padding:5px 8px;border:1px solid #b0bec5;text-align:left}
+    td{padding:5px 8px;border:1px solid #b0bec5;font-size:10pt;vertical-align:top}
+    .sub{font-size:8pt;color:#546e7a;font-weight:bold;text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:2px}
+    .pb{page-break-before:always}
+    em{font-style:italic}
+    img{max-width:100%;height:auto}
+  `;
+
+  let doc = `<html xmlns:o='urn:schemas-microsoft-com:office:office'
     xmlns:w='urn:schemas-microsoft-com:office:word'
     xmlns='http://www.w3.org/TR/REC-html40'>
-<head><meta charset="UTF-8"><style>
-body{font-family:Arial,sans-serif;font-size:10pt;margin:2cm}
-h2{font-size:13pt;color:#1a5c20;border-bottom:2px solid #1a5c20;padding-bottom:4px;margin:16px 0 8px}
-h3{font-size:11pt;color:#1565c0;margin:12px 0 6px;border-bottom:1px solid #1565c0;padding-bottom:2px}
-table{border-collapse:collapse;width:100%;margin-bottom:10px}
-th{background:#e8f5e9;font-weight:bold;font-size:9pt;padding:5px 7px;border:1px solid #b0bec5}
-td{padding:5px 7px;border:1px solid #b0bec5;font-size:10pt;vertical-align:top}
-.sub{font-size:8pt;color:#546e7a;font-weight:bold;text-transform:uppercase;letter-spacing:.05em}
-.pb{page-break-before:always}
-em{font-style:italic}
-img{max-width:100%;height:auto}
-</style></head><body>
+<head><meta charset="UTF-8"><style>${css}</style></head><body>
 
-<h2>INVENTARIO DE RESTOS — ${pFull}</h2>
-<p style="font-size:9pt;color:#546e7a;margin-bottom:12px">Visita correspondiente al mes de <strong>${v.periodo||'—'}</strong></p>
+<div class="enc">${encabezadoCampo}</div>
 
 <table>
-<tr><th colspan="2">Datos generales</th></tr>
-<tr><td><span class="sub">Parque</span><br>${pFull||'—'}</td>
-    <td><span class="sub">Término municipal</span><br>${v.municipio||'—'}</td></tr>
-<tr><td><span class="sub">Fecha</span><br>${fmtFecha(v.fecha)}</td>
-    <td><span class="sub">Observador</span><br>${v.observador||'—'}</td></tr>
-</table>
-
-<table>
-<tr><th colspan="4">Tiempo atmosférico</th></tr>
+<tr><th colspan="4">Datos generales</th></tr>
 <tr>
-  <td><span class="sub">Temperatura</span><br>${v.temperatura||'—'}</td>
-  <td><span class="sub">Visibilidad</span><br>${v.visibilidad||'—'}</td>
-  <td><span class="sub">Dirección viento</span><br>${v.viento_dir||'—'}</td>
-  <td><span class="sub">Velocidad</span><br>${v.viento_vel||'—'}</td>
-</tr>
-<tr>
-  <td><span class="sub">Precipitación</span><br>${v.precipitacion||'—'}</td>
-  <td><span class="sub">Nubosidad</span><br>${v.nubosidad||'—'}</td>
-  <td colspan="2"></td>
+  <td colspan="2"><span class="sub">Visita correspondiente al mes de</span>${v.periodo||'—'}</td>
+  <td><span class="sub">Fecha</span>${fmtFecha(v.fecha)}</td>
+  <td><span class="sub">Observador</span>${v.observador||'—'}</td>
 </tr>
 </table>
 
-<h2>INVENTARIO DE RESTOS</h2>
+<table>
+<tr><th colspan="6">Tiempo atmosférico</th></tr>
+<tr>
+  <td><span class="sub">Temperatura</span>${v.temperatura||'—'}</td>
+  <td><span class="sub">Visibilidad</span>${v.visibilidad||'—'}</td>
+  <td><span class="sub">Dirección viento</span>${v.viento_dir||'—'}</td>
+  <td><span class="sub">Velocidad</span>${v.viento_vel||'—'}</td>
+  <td><span class="sub">Precipitación</span>${v.precipitacion||'—'}</td>
+  <td><span class="sub">Nubosidad</span>${v.nubosidad||'—'}</td>
+</tr>
+</table>
+
 <table>
 <tr><th>Nº Ref</th><th>Especie</th><th>Nº Aerogenerador</th><th>Observaciones</th></tr>
 ${cadaveres.length ? cadaveres.map(c=>`
@@ -1019,57 +1317,78 @@ ${cadaveres.length ? cadaveres.map(c=>`
 </tr>`).join('') : '<tr><td colspan="4" style="text-align:center;color:#999;font-style:italic">Sin cadáveres registrados</td></tr>'}
 </table>`;
 
-  cadaveres.forEach((c,i) => {
+  cadaveres.forEach((c) => {
     const imgMapa = capturarImgMapa(c);
-    html += `
+    doc += `
 <div class="pb"></div>
-<h2>FICHA DE CADÁVER — ${c.referencia||`#${c.num}`}</h2>
+<div class="enc">${encabezadoRestos}</div>
+
 <table>
 <tr><th colspan="4">Datos generales</th></tr>
 <tr>
-  <td><span class="sub">Parque</span><br>${pFull||'—'}</td>
-  <td><span class="sub">Término municipal</span><br>${v.municipio||'—'}</td>
-  <td><span class="sub">Fecha</span><br>${fmtFecha(v.fecha)}</td>
-  <td><span class="sub">Tiempo desde la muerte</span><br>${c.tiempo_muerte||'—'}</td>
+  <td colspan="2"><span class="sub">Parque eólico</span>${pFull}</td>
+  <td><span class="sub">Término municipal</span>${municipio}</td>
+  <td><span class="sub">Fecha</span>${fmtFecha(v.fecha)}</td>
+</tr>
+<tr>
+  <td colspan="3"><span class="sub">Tiempo estimado desde la muerte</span>${c.tiempo_muerte||'—'}</td>
+  <td></td>
 </tr>
 </table>
+
 <table>
 <tr><th colspan="4">Datos de la especie</th></tr>
 <tr>
-  <td><span class="sub">Nº referencia</span><br>${c.referencia||'—'}</td>
-  <td colspan="2"><span class="sub">Especie</span><br>${c.especie_comun||'—'}${c.especie_cientifico?` (<em>${c.especie_cientifico}</em>)`:''}</td>
-  <td><span class="sub">Sexo</span><br>${c.sexo||'—'}</td>
+  <td><span class="sub">Nº referencia</span>${c.referencia||'—'}</td>
+  <td colspan="2"><span class="sub">Especie</span>${c.especie_comun||'—'}${c.especie_cientifico?` (<em>${c.especie_cientifico}</em>)`:''}</td>
+  <td><span class="sub">Sexo</span>${c.sexo||'—'}</td>
 </tr>
 <tr>
-  <td><span class="sub">Edad</span><br>${c.edad||'—'}</td>
+  <td><span class="sub">Edad</span>${c.edad||'—'}</td>
   <td colspan="3"></td>
 </tr>
 </table>
+
 <table>
 <tr><th colspan="4">Localización</th></tr>
 <tr>
-  <td><span class="sub">Nº aerogenerador</span><br>${c.aerogenerador||'—'}</td>
-  <td><span class="sub">Hábitat</span><br>${c.habitat||'—'}</td>
-  <td colspan="2"><span class="sub">Coordenadas UTM ETRS89</span><br>X: ${c.utmX||'—'} &nbsp; Y: ${c.utmY||'—'}</td>
+  <td><span class="sub">Nº aerogenerador</span>${c.aerogenerador||'—'}</td>
+  <td><span class="sub">Hábitat</span>${c.habitat||'—'}</td>
+  <td colspan="2"><span class="sub">Coordenadas UTM ETRS89</span>X: ${c.utmX||'—'} &nbsp; Y: ${c.utmY||'—'}</td>
 </tr>
 <tr>
-  <td colspan="2"><span class="sub">Distancia al aerogenerador</span><br>${c.distancia||'—'}</td>
-  <td colspan="2"><span class="sub">Diagnóstico de mortandad</span><br>${c.diagnostico||'—'}</td>
+  <td colspan="2"><span class="sub">Distancia al aerogenerador</span>${c.distancia||'—'}</td>
+  <td colspan="2"><span class="sub">Causa probable de mortalidad</span>${c.diagnostico||'—'}</td>
 </tr>
-<tr><td colspan="4"><span class="sub">Observaciones</span><br>${c.observaciones||'—'}</td></tr>
+<tr>
+  <td colspan="2"><span class="sub">Actuaciones</span>${c.actuaciones||'—'}</td>
+  <td colspan="2"><span class="sub">Infraestructura</span>${c.infraestructura||'—'}</td>
+</tr>
+<tr><td colspan="4"><span class="sub">Observaciones</span>${c.observaciones||'—'}</td></tr>
 </table>
+
+${imgMapa ? `<table><tr><th>Localización en mapa</th></tr><tr><td style="text-align:center"><img src="${imgMapa}" style="max-width:500px;border:1px solid #ccc"></td></tr></table>` : ''}
+
 <table>
 <tr><th>Descripción de los restos</th></tr>
-<tr><td>${c.descripcion||'—'}</td></tr>
+<tr><td style="min-height:60px">${c.descripcion||'—'}</td></tr>
 </table>
-${imgMapa ? `<h3>Localización en ortofoto</h3><p><img src="${imgMapa}" style="max-width:500px;border:1px solid #ccc"></p>` : ''}
-${c.fotos.length ? `<h3>Fotografías</h3><table><tr>${c.fotos.map(f=>`<td style="text-align:center;border:1px solid #ccc;padding:4px"><img src="${f}" style="max-width:180px;max-height:150px;display:block"></td>`).join('')}</tr></table>` : ''}
+
+${c.fotos.length ? `<table><tr><th colspan="${c.fotos.length}">Fotografías</th></tr><tr>${c.fotos.map(f=>`<td style="text-align:center;padding:4px"><img src="${f}" style="max-width:180px;max-height:150px;display:block;margin:0 auto"></td>`).join('')}</tr></table>` : ''}
 `;
   });
 
-  html += '</body></html>';
-  const cod = (v.parque||'parque');
-  descargar(html, `mortandad_${cod}_${v.fecha||'fecha'}.doc`, 'application/msword');
+  doc += '</body></html>';
+
+  // Fix descarga en iOS Safari y Chrome
+  const blob = new Blob([doc], {type: 'application/msword'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `Ficha_${(v.parque||'parque')}_${v.fecha||'fecha'}.doc`;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 1000);
   toast('✓ Word descargado');
 }
 
@@ -1153,5 +1472,31 @@ function toast(msg) {
 }
 
 document.getElementById('fecha').value=new Date().toISOString().split('T')[0];
+
+// ══════════════════════════════════════════════
+// AVISO AL SALIR
+// ══════════════════════════════════════════════
+window.addEventListener('beforeunload', function(e) {
+  if (document.getElementById('pantalla-form').style.display !== 'none' &&
+      (cadaveres.length > 0 || document.getElementById('parque').value)) {
+    e.preventDefault();
+    e.returnValue = '';
+  }
+});
+
+// Aviso Safari iOS
+(function() {
+  const ua = navigator.userAgent;
+  const isIOS = /iPad|iPhone|iPod/.test(ua);
+  const isChrome = /CriOS/.test(ua);
+  if (isIOS && isChrome) {
+    setTimeout(() => {
+      const d = document.createElement('div');
+      d.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#e65100;color:white;padding:10px 16px;font-size:13px;z-index:9999;display:flex;align-items:center;gap:10px;';
+      d.innerHTML = '<span>⚠️</span><span>Para mejor funcionamiento usa <strong>Safari</strong> en iPhone. Chrome puede tener problemas al descargar archivos.</span><button onclick="this.parentNode.remove()" style="margin-left:auto;background:none;border:1px solid white;color:white;border-radius:4px;padding:3px 8px;cursor:pointer;font-size:12px">✕</button>';
+      document.body.appendChild(d);
+    }, 1500);
+  }
+})();
 </script>
 </body></html>

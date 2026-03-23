@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Cuaderno de Campo — ENGIE v11</title>
+<title>Cuaderno de Campo — ENGIE v12</title>
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBnmL9E_YOvPD-4N_jvsqPrl1VlBcuErO8"></script>
 <style>
 :root {
@@ -1592,6 +1592,14 @@ function guardarVisitaActual() {
   }
 }
 
+function calcularHashVisita(visita, cadaveres) {
+  // Resumen ligero del contenido: suficiente para detectar cambios
+  const cadsResumen = (cadaveres || []).map(c =>
+    `${c.referencia||''}|${c.especie_comun||''}|${c.utmX||''}|${c.utmY||''}|${c.fotos?.length||0}`
+  ).join(';');
+  return `${visita?.fecha||''}|${visita?.parque||''}|${visita?.observador||''}|${(cadaveres||[]).length}|${cadsResumen}`;
+}
+
 function cerrarVisita() {
   if (!confirm('¿Marcar esta visita como CERRADA?')) return;
   guardarTodos();
@@ -1600,10 +1608,20 @@ function cerrarVisita() {
   const idx = lista.findIndex(v => v.id === visitaActivaId);
   if (idx >= 0) {
     lista[idx].estado = 'cerrada';
-    lista[idx].subida = false; // Siempre vuelve a Pendiente al cerrar (puede tener cambios nuevos)
+    // Solo marcar como Pendiente si el contenido cambió desde la última subida
+    const hashActual = calcularHashVisita(lista[idx].visita, lista[idx].cadaveres);
+    if (lista[idx].hashSubida && lista[idx].hashSubida === hashActual) {
+      // Sin cambios — mantener subida = true
+    } else {
+      lista[idx].subida = false;
+    }
     setVisitas(lista);
   }
-  toast('✅ Visita cerrada — lista para sincronizar');
+  const sePuedeSync = (() => {
+    const v = lista.find(v => v.id === visitaActivaId);
+    return v && !v.subida;
+  })();
+  toast(sePuedeSync ? '✅ Visita cerrada — lista para sincronizar' : '✅ Visita cerrada (sin cambios desde última subida)');
   volverMenu();
 }
 
@@ -2231,6 +2249,10 @@ async function subirVisita(id) {
   if (idx >= 0) {
     lista[idx].subida = todoOk;
     lista[idx].subidaDrive = driveOk;
+    if (todoOk) {
+      // Guardar hash del contenido subido para detectar cambios futuros
+      lista[idx].hashSubida = calcularHashVisita(lista[idx].visita, lista[idx].cadaveres);
+    }
     setVisitas(lista);
   }
 

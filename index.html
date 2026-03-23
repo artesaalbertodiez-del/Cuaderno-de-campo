@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Cuaderno de Campo — ENGIE v9</title>
+<title>Cuaderno de Campo — ENGIE v10</title>
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBnmL9E_YOvPD-4N_jvsqPrl1VlBcuErO8"></script>
 <style>
 :root {
@@ -1917,8 +1917,11 @@ function _exportWordDatos(v, cads) {
 
   let doc = `<html xmlns:o='urn:schemas-microsoft-com:office:office'
     xmlns:w='urn:schemas-microsoft-com:office:word'
+    xmlns:v='urn:schemas-microsoft-com:vml'
     xmlns='http://www.w3.org/TR/REC-html40'>
-<head><meta charset="UTF-8"><style>${css}</style></head><body>
+<head><meta charset="UTF-8">
+<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View></w:WordDocument></xml><![endif]-->
+<style>${css}</style></head><body>
 
 <div class="enc">${encabezadoCampo}</div>
 
@@ -1958,14 +1961,26 @@ ${cads.length ? cads.map(c=>`
 
   for (const c of cads) {
     const imgMapa = mapaB64[c.id] || null;
-    const fotosHtml = c.fotos.length
-      ? `<table><tr><th colspan="2">Fotografías</th></tr>${
-          c.fotos.reduce((acc,f,i)=>{
-            if(i%2===0) acc.push([f]);
-            else acc[acc.length-1].push(f);
-            return acc;
-          },[]).map(par=>`<tr>${par.map(f=>`<td style="text-align:center;padding:6px;width:50%"><img src="${f}" style="max-width:220px;max-height:180px"></td>`).join('')}</tr>`).join('')
-        }</table>`
+
+    // Fotos: Word renderiza base64 solo si se usa mso-style correcto
+    // Convertimos cada foto a un bloque img con estilo inline que Word acepta
+    const fotosHtml = c.fotos && c.fotos.length
+      ? `<table style="width:100%;border-collapse:collapse;margin-bottom:8px">
+           <tr><th style="background:#2e7d32;color:white;font-size:9pt;padding:5px 8px;border:1px solid #b0bec5;text-align:left" colspan="2">Fotografías</th></tr>
+           ${c.fotos.reduce((acc,f,i) => {
+               if (i % 2 === 0) acc.push([f]);
+               else acc[acc.length-1].push(f);
+               return acc;
+             }, []).map(par =>
+               `<tr>${par.map(f => {
+                 // Asegurar que el dataURL tiene el prefijo correcto
+                 const src = f.startsWith('data:') ? f : `data:image/jpeg;base64,${f}`;
+                 return `<td style="text-align:center;padding:6px;width:50%;border:1px solid #b0bec5">
+                   <img src="${src}" width="220" height="165" style="max-width:220px;max-height:165px;display:block;margin:0 auto">
+                 </td>`;
+               }).join('')}</tr>`
+             ).join('')}
+         </table>`
       : '';
 
     doc += `
@@ -2153,36 +2168,6 @@ function _iniciarOAuth() {
   gTokenClient.requestAccessToken();
 }
 
-async function testSheets() {
-  const aj = getAjustes();
-  const diag = document.getElementById('sync-diagnostico');
-  diag.style.display = 'block';
-  diag.textContent = 'Probando conexión con Sheets…';
-
-  if (!aj.sheetId) { diag.textContent = '⚠ No hay ID de Sheet configurado en Ajustes.'; return; }
-  if (!gAccessToken) { diag.textContent = '⚠ No hay token. Conecta primero con Google.'; return; }
-
-  // Test 1: GET para leer metadatos de la hoja (más simple que POST)
-  try {
-    const url = `https://sheets.googleapis.com/v4/spreadsheets/${aj.sheetId}?fields=spreadsheetId,properties.title,sheets.properties.title`;
-    const res = await fetch(url, { headers: { Authorization: `Bearer ${gAccessToken}` } });
-    const txt = await res.text();
-    if (res.ok) {
-      const data = JSON.parse(txt);
-      const pestañas = data.sheets?.map(s => s.properties.title).join(', ') || '(ninguna)';
-      diag.innerHTML = `✅ <strong>Sheet accesible.</strong><br>Título: ${data.properties?.title}<br>Pestañas: ${pestañas}<br><br>Probando escritura…`;
-      // Test 2: POST de una fila de prueba
-      await volcarFilasSheet(aj.sheetId, aj.sheetTab || 'Mortandad',
-        { parque: 'TEST', municipio: 'TEST', periodo: 'TEST', fecha: '2024-01-01', observador: 'TEST' }, []);
-      diag.innerHTML += '<br>✅ <strong>Escritura correcta.</strong> Sheets funciona.';
-    } else {
-      diag.innerHTML = `❌ <strong>Error GET:</strong> HTTP ${res.status}<br><pre>${txt}</pre>`;
-    }
-  } catch(e) {
-    diag.innerHTML = `❌ <strong>Excepción:</strong> ${e.message}`;
-  }
-}
-
 function googleLogout() {
   if (gAccessToken) google.accounts.oauth2.revoke(gAccessToken);
   gAccessToken = null;
@@ -2207,14 +2192,16 @@ function renderSyncLista() {
     const fecha = fmtFecha(v.visita?.fecha);
     const ncad = (v.cadaveres || []).length;
     const subida = v.subida;
+    const nfotos = (v.cadaveres || []).reduce((s,c) => s + (c.fotos?.length||0), 0);
     return `
     <div class="sync-lista-item">
       <div class="si-info">
         <div style="font-weight:600">${parque}</div>
-        <div class="si-meta">${fecha} · ${ncad} cadáver${ncad!==1?'es':''} · ${v.estado}</div>
+        <div class="si-meta">${fecha} · ${ncad} cadáver${ncad!==1?'es':''} · ${nfotos} foto${nfotos!==1?'s':''}</div>
       </div>
       <span class="si-status ${subida ? 'subido' : 'pendiente'}">${subida ? '✓ Subida' : 'Pendiente'}</span>
       ${gAccessToken && !subida ? `<button class="btn-v btn-sm" onclick="subirVisita('${v.id}')">☁ Subir</button>` : ''}
+      ${subida ? `<button class="btn-r btn-sm" onclick="quitarDeSincronizados('${v.id}')">✕</button>` : ''}
     </div>`;
   }).join('');
 
@@ -2226,62 +2213,188 @@ function renderSyncLista() {
   }
 }
 
+function quitarDeSincronizados(id) {
+  let lista = getVisitas();
+  const idx = lista.findIndex(v => v.id === id);
+  if (idx >= 0) {
+    lista[idx].subida = false;
+    lista[idx].subidaDrive = false;
+    setVisitas(lista);
+  }
+  renderSyncLista();
+  toast('Visita marcada como pendiente');
+}
+
 async function subirVisita(id) {
   if (!gAccessToken) { toast('Conecta primero con Google'); return; }
   const aj = getAjustes();
   const vis = getVisitas().find(v => v.id === id);
   if (!vis) return;
 
-  const wordBlob = generarWordBlob(vis.visita || {}, vis.cadaveres || []);
-  const nombreFichero = `Ficha_${vis.visita?.parque||'parque'}_${vis.visita?.fecha||'fecha'}.doc`;
   const pInfo = PARQUES[vis.visita?.parque] || {};
   const subCarpeta = pInfo.nombre || vis.visita?.parque || null;
+  const carpetaRaiz = aj.driveCarpeta || 'Mortandad ENGIE';
 
-  let driveOk = false;
-  let sheetsOk = false;
+  let driveOk = false, sheetsOk = false, fotosOk = false, csvOk = false;
   let errMsg = '';
 
-  // ── 1. DRIVE ──
-  toast('Subiendo documento a Drive…');
+  // ── 1. WORD a Drive ──
+  toast('Subiendo ficha Word…');
   try {
-    await subirArchivoDrive(wordBlob, nombreFichero, aj.driveCarpeta || 'Mortandad ENGIE', subCarpeta);
+    const wordBlob = generarWordBlob(vis.visita || {}, vis.cadaveres || []);
+    const nombreFichero = `Ficha_${vis.visita?.parque||'parque'}_${vis.visita?.fecha||'fecha'}.doc`;
+    await subirArchivoDrive(wordBlob, nombreFichero, carpetaRaiz, subCarpeta);
     driveOk = true;
-  } catch(e) {
-    console.error('Drive error:', e);
-    errMsg += `Drive: ${e.message}. `;
-  }
+  } catch(e) { errMsg += `Word: ${e.message}. `; }
 
-  // ── 2. SHEETS ── (independiente de Drive)
+  // ── 2. FOTOS a Drive (carpeta Fotos/referencia_cadaver/) ──
+  toast('Subiendo fotos…');
+  try {
+    await subirFotosDrive(vis, carpetaRaiz, subCarpeta);
+    fotosOk = true;
+  } catch(e) { errMsg += `Fotos: ${e.message}. `; }
+
+  // ── 3. CSV backup a Drive ──
+  toast('Guardando copia CSV…');
+  try {
+    const csvContenido = generarCSV([vis]);
+    const csvBlob = new Blob(['\uFEFF' + csvContenido], { type: 'text/csv;charset=utf-8' });
+    const csvNombre = `datos_${vis.visita?.parque||'parque'}_${vis.visita?.fecha||'fecha'}.csv`;
+    await subirArchivoDrive(csvBlob, csvNombre, carpetaRaiz, subCarpeta);
+    csvOk = true;
+  } catch(e) { errMsg += `CSV: ${e.message}. `; }
+
+  // ── 4. SHEETS ──
   if (aj.sheetId) {
     toast('Volcando datos a Sheets…');
     try {
+      await asegurarCabecerasSheet(aj.sheetId, aj.sheetTab || 'Mortandad');
       await volcarFilasSheet(aj.sheetId, aj.sheetTab || 'Mortandad', vis.visita || {}, vis.cadaveres || []);
       sheetsOk = true;
-    } catch(e) {
-      console.error('Sheets error:', e);
-      // Intentar obtener el body del error para más detalle
-      errMsg += `Sheets: ${e.message}. `;
-    }
+    } catch(e) { errMsg += `Sheets: ${e.message}. `; }
   } else {
-    sheetsOk = true; // Sin Sheet configurada, no es un error
+    sheetsOk = true;
   }
 
   // ── Resultado ──
-  if (driveOk && sheetsOk) {
-    let lista = getVisitas();
-    const idx = lista.findIndex(v => v.id === id);
-    if (idx >= 0) { lista[idx].subida = true; setVisitas(lista); }
-    toast('✅ Subida completada');
-    renderSyncLista();
-  } else if (driveOk && !sheetsOk) {
-    // Drive OK pero Sheets falló — marcar como subida parcial
-    let lista = getVisitas();
-    const idx = lista.findIndex(v => v.id === id);
-    if (idx >= 0) { lista[idx].subidaDrive = true; setVisitas(lista); }
-    mostrarErrorSync(`⚠️ Documento subido a Drive correctamente, pero falló Sheets.<br><small>${errMsg}</small>`);
-  } else {
-    mostrarErrorSync(`❌ Error al subir.<br><small>${errMsg}</small>`);
+  const todoOk = driveOk && sheetsOk;
+  let lista = getVisitas();
+  const idx = lista.findIndex(v => v.id === id);
+  if (idx >= 0) {
+    lista[idx].subida = todoOk;
+    lista[idx].subidaDrive = driveOk;
+    setVisitas(lista);
   }
+
+  if (todoOk) {
+    toast('✅ Subida completada');
+  } else {
+    mostrarErrorSync(`⚠️ Subida parcial. ${errMsg}`);
+  }
+  renderSyncLista();
+}
+
+async function subirFotosDrive(vis, carpetaRaiz, subCarpeta) {
+  const cads = vis.cadaveres || [];
+  const conFotos = cads.filter(c => c.fotos && c.fotos.length > 0);
+  if (!conFotos.length) return;
+
+  // Carpeta raíz → subcarpeta parque → Fotos
+  let rootId = await buscarCarpetaDrive(carpetaRaiz, null);
+  if (!rootId) rootId = await crearCarpetaDrive(carpetaRaiz, null);
+
+  let parqueId = rootId;
+  if (subCarpeta) {
+    let sid = await buscarCarpetaDrive(subCarpeta, rootId);
+    if (!sid) sid = await crearCarpetaDrive(subCarpeta, rootId);
+    parqueId = sid;
+  }
+
+  let fotosRootId = await buscarCarpetaDrive('Fotos', parqueId);
+  if (!fotosRootId) fotosRootId = await crearCarpetaDrive('Fotos', parqueId);
+
+  for (const c of conFotos) {
+    const refNombre = (c.referencia || `cad${c.num}`).replace(/\//g, '_');
+    let cadFolderId = await buscarCarpetaDrive(refNombre, fotosRootId);
+    if (!cadFolderId) cadFolderId = await crearCarpetaDrive(refNombre, fotosRootId);
+
+    for (let i = 0; i < c.fotos.length; i++) {
+      const fotoData = c.fotos[i];
+      const nombreFoto = `${refNombre}_foto${i+1}.jpg`;
+      // Convertir dataURL a Blob
+      const base64 = fotoData.split(',')[1] || fotoData;
+      const byteChars = atob(base64);
+      const byteArr = new Uint8Array(byteChars.length);
+      for (let j = 0; j < byteChars.length; j++) byteArr[j] = byteChars.charCodeAt(j);
+      const fotoBlob = new Blob([byteArr], { type: 'image/jpeg' });
+
+      // Buscar si ya existe y sobreescribir
+      const existeId = await buscarArchivoDrive(nombreFoto, cadFolderId);
+      if (existeId) {
+        await fetch(`https://www.googleapis.com/upload/drive/v3/files/${existeId}?uploadType=media`, {
+          method: 'PATCH',
+          headers: { Authorization: `Bearer ${gAccessToken}`, 'Content-Type': 'image/jpeg' },
+          body: fotoBlob
+        });
+      } else {
+        const meta = { name: nombreFoto, mimeType: 'image/jpeg', parents: [cadFolderId] };
+        const form = new FormData();
+        form.append('metadata', new Blob([JSON.stringify(meta)], { type: 'application/json' }));
+        form.append('file', fotoBlob);
+        await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${gAccessToken}` },
+          body: form
+        });
+      }
+    }
+  }
+}
+
+async function asegurarCabecerasSheet(sheetId, tabName) {
+  // Leer primera fila para ver si ya tiene cabeceras
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(tabName)}!A1:N1`;
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${gAccessToken}` } });
+  if (!res.ok) return; // Si falla la lectura, no bloqueamos
+  const data = await res.json();
+  const primeraFila = data.values?.[0] || [];
+  if (primeraFila.length > 0) return; // Ya tiene cabeceras
+
+  // Insertar cabeceras
+  const cabeceras = [['Parque','Municipio','Periodo','Fecha','Observador',
+    'Nº Ref','Especie','Nombre Científico','Aerogenerador',
+    'UTM X','UTM Y','Distancia','Diagnóstico','Descripción']];
+  await fetch(
+    `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(tabName)}!A1:append?valueInputOption=USER_ENTERED`,
+    {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${gAccessToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ values: cabeceras })
+    }
+  );
+}
+
+function generarCSV(visitas) {
+  const cols = ['Parque','Municipio','Periodo','Fecha','Observador',
+    'Nº_Ref','Especie','Nombre_Cientifico','Sexo','Edad','Aerogenerador','Habitat',
+    'Lat_WGS84','Lon_WGS84','UTM_X','UTM_Y','Distancia','Diagnostico','Tiempo_Muerte','Descripcion','Observaciones'];
+  const filas = [];
+  visitas.forEach(vit => {
+    const vi = vit.visita || {};
+    const pInfo = PARQUES[vi.parque] || {};
+    if ((vit.cadaveres||[]).length) {
+      vit.cadaveres.forEach(c => filas.push([
+        pInfo.nombre||vi.parque, vi.municipio, vi.periodo, vi.fecha, vi.observador,
+        c.referencia, c.especie_comun||'', c.especie_cientifico||'', c.sexo||'', c.edad||'',
+        c.aerogenerador||'', c.habitat||'', c.lat||'', c.lon||'', c.utmX||'', c.utmY||'',
+        c.distancia||'', c.diagnostico||'', c.tiempo_muerte||'', c.descripcion||'', c.observaciones||''
+      ]));
+    } else {
+      filas.push([pInfo.nombre||vi.parque, vi.municipio, vi.periodo, vi.fecha, vi.observador,
+        '','','','','','','','','','','','','','','','']);
+    }
+  });
+  return [cols, ...filas].map(r => r.map(x => `"${(x||'').toString().replace(/"/g,'""')}"`).join(';')).join('\r\n');
 }
 
 function mostrarErrorSync(html) {

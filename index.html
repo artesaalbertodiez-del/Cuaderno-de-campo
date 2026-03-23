@@ -341,7 +341,9 @@ input[type="file"] { display: none; }
   <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
     <button class="btn-a" id="btn-google-login" onclick="googleLogin()">🔑 Conectar con Google</button>
     <button class="btn-g" id="btn-google-logout" onclick="googleLogout()" style="display:none">🚪 Desconectar</button>
+    <button class="btn-g" id="btn-test-sheets" onclick="testSheets()" style="display:none">🔬 Probar Sheets</button>
   </div>
+  <div id="sync-diagnostico" style="display:none;background:#e3f2fd;border:1px solid #90caf9;border-radius:8px;padding:12px 14px;margin-bottom:12px;font-size:12px;font-family:monospace;word-break:break-all"></div>
   <div id="sync-lista"></div>
 </div>
 
@@ -2139,17 +2141,51 @@ function _iniciarOAuth() {
   gTokenClient = google.accounts.oauth2.initTokenClient({
     client_id: GOOGLE_CLIENT_ID,
     scope: GOOGLE_SCOPES,
+    // Forzar re-consent para asegurar todos los scopes
+    prompt: 'consent',
     callback: (resp) => {
       if (resp.error) { toast('Error de autenticación: ' + resp.error); return; }
       gAccessToken = resp.access_token;
+      console.log('Token obtenido. Scopes:', resp.scope);
       document.getElementById('sync-estado-txt').innerHTML = '✅ <strong>Conectado a Google.</strong> Puedes subir las visitas pendientes.';
       document.getElementById('sync-estado-box').className = 'sync-estado ok';
       document.getElementById('btn-google-login').style.display = 'none';
       document.getElementById('btn-google-logout').style.display = 'inline-flex';
+      document.getElementById('btn-test-sheets').style.display = 'inline-flex';
       renderSyncLista();
     }
   });
   gTokenClient.requestAccessToken();
+}
+
+async function testSheets() {
+  const aj = getAjustes();
+  const diag = document.getElementById('sync-diagnostico');
+  diag.style.display = 'block';
+  diag.textContent = 'Probando conexión con Sheets…';
+
+  if (!aj.sheetId) { diag.textContent = '⚠ No hay ID de Sheet configurado en Ajustes.'; return; }
+  if (!gAccessToken) { diag.textContent = '⚠ No hay token. Conecta primero con Google.'; return; }
+
+  // Test 1: GET para leer metadatos de la hoja (más simple que POST)
+  try {
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${aj.sheetId}?fields=spreadsheetId,properties.title,sheets.properties.title`;
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${gAccessToken}` } });
+    const txt = await res.text();
+    if (res.ok) {
+      const data = JSON.parse(txt);
+      const pestañas = data.sheets?.map(s => s.properties.title).join(', ') || '(ninguna)';
+      diag.innerHTML = `✅ <strong>Sheet accesible.</strong><br>Título: ${data.properties?.title}<br>Pestañas: ${pestañas}<br><br>Probando escritura…`;
+      // Test 2: POST de una fila de prueba
+      await volcarFilasSheet(aj.sheetId, aj.sheetTab || 'Mortandad',
+        { parque: 'TEST', municipio: 'TEST', periodo: 'TEST', fecha: '2024-01-01', observador: 'TEST' }, []);
+      diag.innerHTML += '<br>✅ <strong>Escritura correcta.</strong> Sheets funciona.';
+    } else {
+      diag.innerHTML = `❌ <strong>Error GET:</strong> HTTP ${res.status}<br><pre>${txt}</pre>`;
+    }
+  } catch(e) {
+    diag.innerHTML = `❌ <strong>Excepción:</strong> ${e.message}`;
+  }
 }
 
 function googleLogout() {
@@ -2166,6 +2202,10 @@ function googleLogout() {
 function renderSyncLista() {
   const lista = getVisitas().slice().reverse();
   const cont = document.getElementById('sync-lista');
+
+  // Mostrar botón test si conectado
+  const btnTest = document.getElementById('btn-test-sheets');
+  if (btnTest) btnTest.style.display = gAccessToken ? 'inline-flex' : 'none';
   if (!lista.length) {
     cont.innerHTML = '<p style="color:var(--texto2);font-size:13px;padding:12px 0">No hay visitas guardadas para sincronizar.</p>';
     return;

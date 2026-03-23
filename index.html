@@ -2200,32 +2200,66 @@ async function subirVisita(id) {
   const aj = getAjustes();
   const vis = getVisitas().find(v => v.id === id);
   if (!vis) return;
-  toast('Subiendo…');
 
+  const wordBlob = generarWordBlob(vis.visita || {}, vis.cadaveres || []);
+  const nombreFichero = `Ficha_${vis.visita?.parque||'parque'}_${vis.visita?.fecha||'fecha'}.doc`;
+  const pInfo = PARQUES[vis.visita?.parque] || {};
+  const subCarpeta = pInfo.nombre || vis.visita?.parque || null;
+
+  let driveOk = false;
+  let sheetsOk = false;
+  let errMsg = '';
+
+  // ── 1. DRIVE ──
+  toast('Subiendo documento a Drive…');
   try {
-    // 1. Subir Word a Drive con subcarpeta por parque
-    const wordBlob = generarWordBlob(vis.visita || {}, vis.cadaveres || []);
-    const nombreFichero = `Ficha_${vis.visita?.parque||'parque'}_${vis.visita?.fecha||'fecha'}.doc`;
-    const pInfo = PARQUES[vis.visita?.parque] || {};
-    const subCarpeta = pInfo.nombre || vis.visita?.parque || null;
     await subirArchivoDrive(wordBlob, nombreFichero, aj.driveCarpeta || 'Mortandad ENGIE', subCarpeta);
+    driveOk = true;
+  } catch(e) {
+    console.error('Drive error:', e);
+    errMsg += `Drive: ${e.message}. `;
+  }
 
-    // 2. Volcar filas al Sheet (si hay ID de hoja configurado)
-    if (aj.sheetId) {
+  // ── 2. SHEETS ── (independiente de Drive)
+  if (aj.sheetId) {
+    toast('Volcando datos a Sheets…');
+    try {
       await volcarFilasSheet(aj.sheetId, aj.sheetTab || 'Mortandad', vis.visita || {}, vis.cadaveres || []);
+      sheetsOk = true;
+    } catch(e) {
+      console.error('Sheets error:', e);
+      // Intentar obtener el body del error para más detalle
+      errMsg += `Sheets: ${e.message}. `;
     }
+  } else {
+    sheetsOk = true; // Sin Sheet configurada, no es un error
+  }
 
-    // Marcar como subida
+  // ── Resultado ──
+  if (driveOk && sheetsOk) {
     let lista = getVisitas();
     const idx = lista.findIndex(v => v.id === id);
     if (idx >= 0) { lista[idx].subida = true; setVisitas(lista); }
-
     toast('✅ Subida completada');
     renderSyncLista();
-  } catch(e) {
-    console.error(e);
-    toast('❌ Error al subir: ' + e.message);
+  } else if (driveOk && !sheetsOk) {
+    // Drive OK pero Sheets falló — marcar como subida parcial
+    let lista = getVisitas();
+    const idx = lista.findIndex(v => v.id === id);
+    if (idx >= 0) { lista[idx].subidaDrive = true; setVisitas(lista); }
+    mostrarErrorSync(`⚠️ Documento subido a Drive correctamente, pero falló Sheets.<br><small>${errMsg}</small>`);
+  } else {
+    mostrarErrorSync(`❌ Error al subir.<br><small>${errMsg}</small>`);
   }
+}
+
+function mostrarErrorSync(html) {
+  const cont = document.getElementById('sync-lista');
+  const div = document.createElement('div');
+  div.style.cssText = 'background:#ffebee;border:1px solid #ef9a9a;border-radius:8px;padding:12px 14px;margin-bottom:12px;font-size:13px;color:#c62828';
+  div.innerHTML = html;
+  cont.insertBefore(div, cont.firstChild);
+  setTimeout(() => div.remove(), 10000);
 }
 
 async function subirTodasPendientes() {
@@ -2311,15 +2345,21 @@ async function volcarFilasSheet(sheetId, tabName, v, cads) {
   ]) : [[pInfo.nombre||v.parque, v.municipio, v.periodo, v.fecha, v.observador,
     '','','','','','','','','']];
 
-  const res = await fetch(
-    `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(tabName)}:append?valueInputOption=USER_ENTERED`,
-    {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${gAccessToken}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ values: filas })
-    }
-  );
-  if (!res.ok) throw new Error('Sheets append failed: ' + res.status);
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(tabName)}:append?valueInputOption=USER_ENTERED`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${gAccessToken}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ values: filas })
+  });
+
+  if (!res.ok) {
+    let detalle = `HTTP ${res.status}`;
+    try {
+      const errData = await res.json();
+      detalle = errData?.error?.message || detalle;
+    } catch(e) {}
+    throw new Error(detalle);
+  }
 }
 
 // ══════════════════════════════════════════════

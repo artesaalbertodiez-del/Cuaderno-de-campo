@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Cuaderno de Campo — ENGIE v10</title>
+<title>Cuaderno de Campo — ENGIE v11</title>
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBnmL9E_YOvPD-4N_jvsqPrl1VlBcuErO8"></script>
 <style>
 :root {
@@ -409,95 +409,26 @@ input[type="file"] { display: none; }
           <input type="text" id="municipio" placeholder="Ej. Medinaceli">
         </div>
         <div class="campo">
-          <label>Periodo</label>
-          <select id="periodo">
-            <option value="">— Seleccionar —</option>
-            <option>Enero (1ª Quincena)</option>
-            <option>Enero (2ª Quincena)</option>
-            <option>Enero (1ª semana)</option>
-            <option>Enero (2ª semana)</option>
-            <option>Enero (3ª semana)</option>
-            <option>Enero (4ª semana)</option>
-            <option>Enero (Mensual)</option>
-            <option>Febrero (1ª Quincena)</option>
-            <option>Febrero (2ª Quincena)</option>
-            <option>Febrero (1ª semana)</option>
-            <option>Febrero (2ª semana)</option>
-            <option>Febrero (3ª semana)</option>
-            <option>Febrero (4ª semana)</option>
-            <option>Febrero (Mensual)</option>
-            <option>Marzo (1ª Quincena)</option>
-            <option>Marzo (2ª Quincena)</option>
-            <option>Marzo (1ª semana)</option>
-            <option>Marzo (2ª semana)</option>
-            <option>Marzo (3ª semana)</option>
-            <option>Marzo (4ª semana)</option>
-            <option>Marzo (Mensual)</option>
-            <option>Abril (1ª Quincena)</option>
-            <option>Abril (2ª Quincena)</option>
-            <option>Abril (1ª semana)</option>
-            <option>Abril (2ª semana)</option>
-            <option>Abril (3ª semana)</option>
-            <option>Abril (4ª semana)</option>
-            <option>Abril (Mensual)</option>
-            <option>Mayo (1ª Quincena)</option>
-            <option>Mayo (2ª Quincena)</option>
-            <option>Mayo (1ª semana)</option>
-            <option>Mayo (2ª semana)</option>
-            <option>Mayo (3ª semana)</option>
-            <option>Mayo (4ª semana)</option>
-            <option>Mayo (Mensual)</option>
-            <option>Junio (1ª Quincena)</option>
-            <option>Junio (2ª Quincena)</option>
-            <option>Junio (1ª semana)</option>
-            <option>Junio (2ª semana)</option>
-            <option>Junio (3ª semana)</option>
-            <option>Junio (4ª semana)</option>
-            <option>Junio (Mensual)</option>
-            <option>Julio (1ª Quincena)</option>
-            <option>Julio (2ª Quincena)</option>
-            <option>Julio (1ª semana)</option>
-            <option>Julio (2ª semana)</option>
-            <option>Julio (3ª semana)</option>
-            <option>Julio (4ª semana)</option>
-            <option>Julio (Mensual)</option>
-            <option>Agosto (1ª Quincena)</option>
-            <option>Agosto (2ª Quincena)</option>
-            <option>Agosto (1ª semana)</option>
-            <option>Agosto (2ª semana)</option>
-            <option>Agosto (3ª semana)</option>
-            <option>Agosto (4ª semana)</option>
-            <option>Agosto (Mensual)</option>
-            <option>Septiembre (1ª Quincena)</option>
-            <option>Septiembre (2ª Quincena)</option>
-            <option>Septiembre (1ª semana)</option>
-            <option>Septiembre (2ª semana)</option>
-            <option>Septiembre (3ª semana)</option>
-            <option>Septiembre (4ª semana)</option>
-            <option>Septiembre (Mensual)</option>
-            <option>Octubre (1ª Quincena)</option>
-            <option>Octubre (2ª Quincena)</option>
-            <option>Octubre (1ª semana)</option>
-            <option>Octubre (2ª semana)</option>
-            <option>Octubre (3ª semana)</option>
-            <option>Octubre (4ª semana)</option>
-            <option>Octubre (Mensual)</option>
-            <option>Noviembre (1ª Quincena)</option>
-            <option>Noviembre (2ª Quincena)</option>
-            <option>Noviembre (1ª semana)</option>
-            <option>Noviembre (2ª semana)</option>
-            <option>Noviembre (3ª semana)</option>
-            <option>Noviembre (4ª semana)</option>
-            <option>Noviembre (Mensual)</option>
-            <option>Diciembre (1ª Quincena)</option>
-            <option>Diciembre (2ª Quincena)</option>
-            <option>Diciembre (1ª semana)</option>
-            <option>Diciembre (2ª semana)</option>
-            <option>Diciembre (3ª semana)</option>
-            <option>Diciembre (4ª semana)</option>
-            <option>Diciembre (Mensual)</option>
+          <label>Mes</label>
+          <select id="mes" onchange="actualizarPeriodo()">
+            <option value="">— Mes —</option>
+            <option>Enero</option><option>Febrero</option><option>Marzo</option>
+            <option>Abril</option><option>Mayo</option><option>Junio</option>
+            <option>Julio</option><option>Agosto</option><option>Septiembre</option>
+            <option>Octubre</option><option>Noviembre</option><option>Diciembre</option>
           </select>
         </div>
+        <div class="campo">
+          <label>Frecuencia</label>
+          <select id="frecuencia" onchange="actualizarPeriodo()">
+            <option value="">— Frecuencia —</option>
+            <option>1ª Quincena</option><option>2ª Quincena</option>
+            <option>1ª semana</option><option>2ª semana</option>
+            <option>3ª semana</option><option>4ª semana</option>
+            <option>Mensual</option>
+          </select>
+        </div>
+        <input type="hidden" id="periodo">
       </div>
       <div class="fila f2">
         <div class="campo">
@@ -588,7 +519,6 @@ input[type="file"] { display: none; }
 <!-- BARRA -->
 <div class="barra">
   <button class="btn-v" onclick="guardar()">💾 Guardar</button>
-  <button class="btn-g" onclick="descargarFotos()">📸 Fotos</button>
   <button class="btn-g" style="background:#fff3e0;color:#e65100;border:1px solid #ffccbc" onclick="cerrarVisita()">✅ Cerrar visita</button>
   <button class="btn-g" onclick="limpiar()" style="margin-left:auto">🗑</button>
 </div>
@@ -771,7 +701,7 @@ function nuevoFormulario() {
   visitaActivaId = 'visita_' + Date.now();
   cadaveres = []; nextId = 1;
 
-  ['parque','municipio','periodo','observador',
+  ['parque','municipio','mes','frecuencia','periodo','observador',
    'temperatura','visibilidad','nubosidad','precipitacion','viento_dir','viento_vel',
    'hora_inicio','hora_fin'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
@@ -1423,7 +1353,11 @@ function renderCadaveres() {
           </div>
           <div class="campo"><label>Tamaño</label>
             <select data-c="tamano"><option value="">—</option>
-              ${sel(['1','2','3','4','5'], cad.tamano||'')}
+              <option value="1"${cad.tamano==='1'?' selected':''}>1 — Ave muy grande</option>
+              <option value="2"${cad.tamano==='2'?' selected':''}>2 — Ave grande</option>
+              <option value="3"${cad.tamano==='3'?' selected':''}>3 — Ave mediana</option>
+              <option value="4"${cad.tamano==='4'?' selected':''}>4 — Ave pequeña</option>
+              <option value="5"${cad.tamano==='5'?' selected':''}>5 — Quiróptero</option>
             </select>
           </div>
         </div>
@@ -1659,13 +1593,17 @@ function guardarVisitaActual() {
 }
 
 function cerrarVisita() {
-  if (!confirm('¿Marcar esta visita como CERRADA? Ya no podrás editarla fácilmente desde el historial.')) return;
+  if (!confirm('¿Marcar esta visita como CERRADA?')) return;
   guardarTodos();
   guardarVisitaActual();
   let lista = getVisitas();
   const idx = lista.findIndex(v => v.id === visitaActivaId);
-  if (idx >= 0) { lista[idx].estado = 'cerrada'; setVisitas(lista); }
-  toast('✅ Visita cerrada');
+  if (idx >= 0) {
+    lista[idx].estado = 'cerrada';
+    lista[idx].subida = false; // Siempre vuelve a Pendiente al cerrar (puede tener cambios nuevos)
+    setVisitas(lista);
+  }
+  toast('✅ Visita cerrada — lista para sincronizar');
   volverMenu();
 }
 
@@ -1677,6 +1615,9 @@ function cargarVisita(id) {
 
   const datos = v.visita || {};
   Object.keys(datos).forEach(k => { const el = document.getElementById(k); if (el) el.value = datos[k]; });
+  // Restaurar selectores de mes y frecuencia
+  if (datos.mes) { const el = document.getElementById('mes'); if (el) el.value = datos.mes; }
+  if (datos.frecuencia) { const el = document.getElementById('frecuencia'); if (el) el.value = datos.frecuencia; }
   actualizarSubparque(); actualizarMunicipio();
 
   if (v.cadaveres?.length) {
@@ -1842,14 +1783,25 @@ function exportExcelHistorial(id) {
   _exportExcelDatos(vis.visita || {}, vis.cadaveres || []);
 }
 
+function actualizarPeriodo() {
+  const mes = document.getElementById('mes')?.value || '';
+  const frec = document.getElementById('frecuencia')?.value || '';
+  const periodo = mes && frec ? `${mes} (${frec})` : (mes || frec || '');
+  const el = document.getElementById('periodo');
+  if (el) el.value = periodo;
+}
+
 // ══════════════════════════════════════════════
 // GUARDAR / CARGAR (ALIAS COMPATIBILIDAD)
 // ══════════════════════════════════════════════
 function getDatosVisita() {
+  actualizarPeriodo();
   return {
     parque: document.getElementById('parque').value,
     subparque: '',
     municipio: document.getElementById('municipio').value,
+    mes: document.getElementById('mes')?.value || '',
+    frecuencia: document.getElementById('frecuencia')?.value || '',
     periodo: document.getElementById('periodo').value,
     fecha: document.getElementById('fecha').value,
     hora_inicio: document.getElementById('hora_inicio').value,
@@ -2111,7 +2063,7 @@ function descargar(contenido, nombre, tipo) {
 function limpiar() {
   if(!confirm('¿Limpiar el formulario actual? Se perderán los cambios no guardados.')) return;
   cadaveres=[]; nextId=1;
-  ['parque','municipio','periodo','observador',
+  ['parque','municipio','mes','frecuencia','periodo','observador',
    'temperatura','visibilidad','nubosidad','precipitacion','viento_dir','viento_vel',
    'hora_inicio','hora_fin'].forEach(id=>{const el=document.getElementById(id);if(el) el.value='';});
   document.getElementById('fecha').value=new Date().toISOString().split('T')[0];
@@ -2180,62 +2132,68 @@ function googleLogout() {
 }
 
 function renderSyncLista() {
-  const lista = getVisitas().slice().reverse();
+  const todasVisitas = getVisitas().slice().reverse();
   const cont = document.getElementById('sync-lista');
-  if (!lista.length) {
+
+  if (!todasVisitas.length) {
     cont.innerHTML = '<p style="color:var(--texto2);font-size:13px;padding:12px 0">No hay visitas guardadas para sincronizar.</p>';
     return;
   }
-  cont.innerHTML = lista.map(v => {
+
+  cont.innerHTML = todasVisitas.map(v => {
     const pInfo = PARQUES[v.visita?.parque] || {};
     const parque = pInfo.nombre || v.visita?.parque || '—';
     const fecha = fmtFecha(v.visita?.fecha);
     const ncad = (v.cadaveres || []).length;
-    const subida = v.subida;
     const nfotos = (v.cadaveres || []).reduce((s,c) => s + (c.fotos?.length||0), 0);
+    const subida = v.subida;
+    const cerrada = v.estado === 'cerrada';
+
+    let accion = '';
+    if (!cerrada) {
+      // Borrador: mostrar aviso, sin botón de subida
+      accion = `<span style="font-size:11px;color:#e65100;font-weight:600">Cerrar primero</span>`;
+    } else if (subida) {
+      accion = `<span class="si-status subido">✓ Subida</span>`;
+    } else {
+      accion = gAccessToken
+        ? `<button class="btn-v btn-sm" onclick="subirVisita('${v.id}')">☁ Subir</button>`
+        : `<span class="si-status pendiente">Pendiente</span>`;
+    }
+
     return `
     <div class="sync-lista-item">
       <div class="si-info">
         <div style="font-weight:600">${parque}</div>
-        <div class="si-meta">${fecha} · ${ncad} cadáver${ncad!==1?'es':''} · ${nfotos} foto${nfotos!==1?'s':''}</div>
+        <div class="si-meta">${fecha} · ${ncad} cadáver${ncad!==1?'es':''} · ${nfotos} foto${nfotos!==1?'s':''} · <em>${cerrada ? 'cerrada' : 'borrador'}</em></div>
       </div>
-      <span class="si-status ${subida ? 'subido' : 'pendiente'}">${subida ? '✓ Subida' : 'Pendiente'}</span>
-      ${gAccessToken && !subida ? `<button class="btn-v btn-sm" onclick="subirVisita('${v.id}')">☁ Subir</button>` : ''}
-      ${subida ? `<button class="btn-r btn-sm" onclick="quitarDeSincronizados('${v.id}')">✕</button>` : ''}
+      ${accion}
     </div>`;
   }).join('');
 
   if (gAccessToken) {
-    const pendientes = lista.filter(v => !v.subida).length;
+    const pendientes = todasVisitas.filter(v => v.estado === 'cerrada' && !v.subida).length;
     if (pendientes > 0) {
       cont.innerHTML = `<button class="btn-v" onclick="subirTodasPendientes()" style="margin-bottom:12px">☁ Subir todas las pendientes (${pendientes})</button>` + cont.innerHTML;
     }
   }
 }
 
-function quitarDeSincronizados(id) {
-  let lista = getVisitas();
-  const idx = lista.findIndex(v => v.id === id);
-  if (idx >= 0) {
-    lista[idx].subida = false;
-    lista[idx].subidaDrive = false;
-    setVisitas(lista);
-  }
-  renderSyncLista();
-  toast('Visita marcada como pendiente');
-}
-
 async function subirVisita(id) {
   if (!gAccessToken) { toast('Conecta primero con Google'); return; }
-  const aj = getAjustes();
   const vis = getVisitas().find(v => v.id === id);
   if (!vis) return;
+  if (vis.estado !== 'cerrada') {
+    toast('⚠ Cierra la visita antes de sincronizar');
+    return;
+  }
 
+  const aj = getAjustes();
   const pInfo = PARQUES[vis.visita?.parque] || {};
   const subCarpeta = pInfo.nombre || vis.visita?.parque || null;
   const carpetaRaiz = aj.driveCarpeta || 'Mortandad ENGIE';
 
-  let driveOk = false, sheetsOk = false, fotosOk = false, csvOk = false;
+  let driveOk = false, sheetsOk = false, fotosOk = false;
   let errMsg = '';
 
   // ── 1. WORD a Drive ──
@@ -2247,24 +2205,14 @@ async function subirVisita(id) {
     driveOk = true;
   } catch(e) { errMsg += `Word: ${e.message}. `; }
 
-  // ── 2. FOTOS a Drive (carpeta Fotos/referencia_cadaver/) ──
+  // ── 2. FOTOS a Drive ──
   toast('Subiendo fotos…');
   try {
     await subirFotosDrive(vis, carpetaRaiz, subCarpeta);
     fotosOk = true;
   } catch(e) { errMsg += `Fotos: ${e.message}. `; }
 
-  // ── 3. CSV backup a Drive ──
-  toast('Guardando copia CSV…');
-  try {
-    const csvContenido = generarCSV([vis]);
-    const csvBlob = new Blob(['\uFEFF' + csvContenido], { type: 'text/csv;charset=utf-8' });
-    const csvNombre = `datos_${vis.visita?.parque||'parque'}_${vis.visita?.fecha||'fecha'}.csv`;
-    await subirArchivoDrive(csvBlob, csvNombre, carpetaRaiz, subCarpeta);
-    csvOk = true;
-  } catch(e) { errMsg += `CSV: ${e.message}. `; }
-
-  // ── 4. SHEETS ──
+  // ── 3. SHEETS ──
   if (aj.sheetId) {
     toast('Volcando datos a Sheets…');
     try {
@@ -2352,25 +2300,23 @@ async function subirFotosDrive(vis, carpetaRaiz, subCarpeta) {
 }
 
 async function asegurarCabecerasSheet(sheetId, tabName) {
-  // Leer primera fila para ver si ya tiene cabeceras
-  const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(tabName)}!A1:N1`;
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(tabName)}!A1:Z1`;
   const res = await fetch(url, { headers: { Authorization: `Bearer ${gAccessToken}` } });
-  if (!res.ok) return; // Si falla la lectura, no bloqueamos
+  if (!res.ok) return;
   const data = await res.json();
-  const primeraFila = data.values?.[0] || [];
-  if (primeraFila.length > 0) return; // Ya tiene cabeceras
-
-  // Insertar cabeceras
-  const cabeceras = [['Parque','Municipio','Periodo','Fecha','Observador',
-    'Nº Ref','Especie','Nombre Científico','Aerogenerador',
-    'UTM X','UTM Y','Distancia','Diagnóstico','Descripción']];
+  if ((data.values?.[0] || []).length > 0) return;
+  const cabeceras = [[
+    'Parque','Municipio','Mes','Frecuencia','Periodo','Fecha','Hora Inicio','Hora Fin','Observador',
+    'Temperatura','Visibilidad','Dirección Viento','Velocidad Viento','Precipitación','Nubosidad',
+    'Nº Ref','Especie','Nombre Científico','Sexo','Edad','Tamaño',
+    'Aerogenerador','Subparque','Hábitat','Estado Cadáver','Estado Descomposición',
+    'UTM X','UTM Y','Lat WGS84','Lon WGS84',
+    'Distancia Aerog.','Dirección Aerog.','Causa Probable','Tiempo Muerte (días)',
+    'Actuaciones','Infraestructura','Descripción Restos','Observaciones'
+  ]];
   await fetch(
     `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(tabName)}!A1:append?valueInputOption=USER_ENTERED`,
-    {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${gAccessToken}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ values: cabeceras })
-    }
+    { method:'POST', headers:{ Authorization:`Bearer ${gAccessToken}`,'Content-Type':'application/json' }, body:JSON.stringify({values:cabeceras}) }
   );
 }
 
@@ -2407,7 +2353,7 @@ function mostrarErrorSync(html) {
 }
 
 async function subirTodasPendientes() {
-  const pendientes = getVisitas().filter(v => !v.subida).map(v => v.id);
+  const pendientes = getVisitas().filter(v => v.estado === 'cerrada' && !v.subida).map(v => v.id);
   for (const id of pendientes) { await subirVisita(id); }
 }
 
@@ -2511,27 +2457,26 @@ async function crearCarpetaDrive(nombre, parentId) {
 
 async function volcarFilasSheet(sheetId, tabName, v, cads) {
   const pInfo = PARQUES[v.parque] || {};
-  const filas = cads.length ? cads.map(c => [
-    pInfo.nombre||v.parque, v.municipio, v.periodo, v.fecha, v.observador,
-    c.referencia, c.especie_comun||'', c.especie_cientifico||'',
-    c.aerogenerador||'', c.utmX||'', c.utmY||'',
-    c.distancia||'', c.diagnostico||'', c.descripcion||''
-  ]) : [[pInfo.nombre||v.parque, v.municipio, v.periodo, v.fecha, v.observador,
-    '','','','','','','','','']];
-
+  const fila = (c) => [
+    pInfo.nombre||v.parque, v.municipio, v.mes||'', v.frecuencia||'', v.periodo||'',
+    v.fecha, v.hora_inicio||'', v.hora_fin||'', v.observador||'',
+    v.temperatura||'', v.visibilidad||'', v.viento_dir||'', v.viento_vel||'', v.precipitacion||'', v.nubosidad||'',
+    c.referencia||'', c.especie_comun||'', c.especie_cientifico||'', c.sexo||'', c.edad||'', c.tamano||'',
+    c.aerogenerador||'', c.subparque_cad||'', c.habitat||'', c.estado_cadaver||'', c.estado_descomposicion||'',
+    c.utmX||'', c.utmY||'', c.lat||'', c.lon||'',
+    c.distancia||'', c.direccion_aero||'', c.diagnostico||'', c.tiempo_muerte||'',
+    c.actuaciones||'', c.infraestructura||'', c.descripcion||'', c.observaciones||''
+  ];
+  const filas = cads.length ? cads.map(c => fila(c)) : [fila({})];
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(tabName)}:append?valueInputOption=USER_ENTERED`;
   const res = await fetch(url, {
     method: 'POST',
     headers: { Authorization: `Bearer ${gAccessToken}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({ values: filas })
   });
-
   if (!res.ok) {
     let detalle = `HTTP ${res.status}`;
-    try {
-      const errData = await res.json();
-      detalle = errData?.error?.message || detalle;
-    } catch(e) {}
+    try { const errData = await res.json(); detalle = errData?.error?.message || detalle; } catch(e) {}
     throw new Error(detalle);
   }
 }

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Seguimiento Ambiental — ENGIE v8</title>
+<title>Cuaderno de Campo — ENGIE v9</title>
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBnmL9E_YOvPD-4N_jvsqPrl1VlBcuErO8"></script>
 <style>
 :root {
@@ -252,7 +252,7 @@ input[type="file"] { display: none; }
 <div class="cabecera">
   <div style="font-size:22px">🦅</div>
   <div>
-    <h1 id="cab-titulo">Seguimiento Ambiental</h1>
+    <h1 id="cab-titulo">Cuaderno de Campo</h1>
     <p id="cab-subtitulo">ENGIE Wind Farms</p>
   </div>
   <div class="cab-acciones" id="cab-acc" style="display:none">
@@ -265,7 +265,7 @@ input[type="file"] { display: none; }
 <div id="pantalla-inicio">
   <div class="app-logo">
     <div>🦅</div>
-    <h2>Seguimiento Ambiental</h2>
+    <h2>Cuaderno de Campo</h2>
     <p>ENGIE Wind Farms · España</p>
   </div>
 
@@ -341,9 +341,7 @@ input[type="file"] { display: none; }
   <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
     <button class="btn-a" id="btn-google-login" onclick="googleLogin()">🔑 Conectar con Google</button>
     <button class="btn-g" id="btn-google-logout" onclick="googleLogout()" style="display:none">🚪 Desconectar</button>
-    <button class="btn-g" id="btn-test-sheets" onclick="testSheets()" style="display:none">🔬 Probar Sheets</button>
   </div>
-  <div id="sync-diagnostico" style="display:none;background:#e3f2fd;border:1px solid #90caf9;border-radius:8px;padding:12px 14px;margin-bottom:12px;font-size:12px;font-family:monospace;word-break:break-all"></div>
   <div id="sync-lista"></div>
 </div>
 
@@ -590,8 +588,6 @@ input[type="file"] { display: none; }
 <!-- BARRA -->
 <div class="barra">
   <button class="btn-v" onclick="guardar()">💾 Guardar</button>
-  <button class="btn-a" onclick="exportWord()">📄 Word</button>
-  <button class="btn-n" onclick="exportExcel()">📊 Excel</button>
   <button class="btn-g" onclick="descargarFotos()">📸 Fotos</button>
   <button class="btn-g" style="background:#fff3e0;color:#e65100;border:1px solid #ffccbc" onclick="cerrarVisita()">✅ Cerrar visita</button>
   <button class="btn-g" onclick="limpiar()" style="margin-left:auto">🗑</button>
@@ -739,8 +735,8 @@ function mostrarPantalla(id) {
 
   // Cabecera acciones
   document.getElementById('cab-acc').style.display = enInicio ? 'none' : 'flex';
-  document.getElementById('cab-btn-menu').style.display = enForm ? 'inline-flex' : 'none';
-  document.getElementById('cab-btn-inicio').style.display = (!enInicio && !enForm) ? 'inline-flex' : 'none';
+  document.getElementById('cab-btn-menu').style.display = (!enInicio && !enMenu) ? 'inline-flex' : 'none';
+  document.getElementById('cab-btn-inicio').style.display = (!enInicio && enMenu) ? 'inline-flex' : 'none';
 
   // Barra inferior
   const barra = document.querySelector('.barra');
@@ -748,12 +744,12 @@ function mostrarPantalla(id) {
 
   // Título cabecera
   const titulos = {
-    'pantalla-inicio': ['Seguimiento Ambiental', 'ENGIE Wind Farms'],
-    'pantalla-menu':   ['Mortandad de Fauna', 'ENGIE Wind Farms'],
-    'pantalla-form':   ['Registro de Visita', 'Mortandad de Fauna'],
+    'pantalla-inicio':    ['Cuaderno de Campo', 'ENGIE Wind Farms'],
+    'pantalla-menu':      ['Mortandad de Fauna', 'Cuaderno de Campo'],
+    'pantalla-form':      ['Registro de Visita', 'Mortandad de Fauna'],
     'pantalla-historial': ['Historial', 'Mortandad de Fauna'],
-    'pantalla-sync':   ['Sincronizar', 'Google Drive · Sheets'],
-    'pantalla-ajustes':['Ajustes', 'ENGIE Wind Farms'],
+    'pantalla-sync':      ['Sincronizar', 'Google Drive · Sheets'],
+    'pantalla-ajustes':   ['Ajustes', 'Cuaderno de Campo'],
   };
   const [t, s] = titulos[id] || ['Seguimiento Ambiental', 'ENGIE Wind Farms'];
   document.getElementById('cab-titulo').textContent = t;
@@ -787,16 +783,16 @@ function nuevoFormulario() {
 
   renderCadaveres(); actualizarBadge(); actualizarInventario();
   mostrarPantalla('pantalla-form');
-  guardarVisitaActual();
+  // NO se guarda automáticamente — solo al pulsar "Guardar"
 }
 
 function abrirForm() { nuevoFormulario(); }
 
 function volverMenu() {
+  // Si venimos del formulario, autosave solo si ya fue guardado antes
   if (document.getElementById('pantalla-form').style.display !== 'none') {
-    if (cadaveres.length > 0 || document.getElementById('parque').value) {
-      guardar();
-    }
+    const yaExiste = getVisitas().some(v => v.id === visitaActivaId);
+    if (yaExiste) guardar();
   }
   mostrarPantalla('pantalla-menu');
   actualizarMenuContadores();
@@ -2151,7 +2147,6 @@ function _iniciarOAuth() {
       document.getElementById('sync-estado-box').className = 'sync-estado ok';
       document.getElementById('btn-google-login').style.display = 'none';
       document.getElementById('btn-google-logout').style.display = 'inline-flex';
-      document.getElementById('btn-test-sheets').style.display = 'inline-flex';
       renderSyncLista();
     }
   });
@@ -2202,10 +2197,6 @@ function googleLogout() {
 function renderSyncLista() {
   const lista = getVisitas().slice().reverse();
   const cont = document.getElementById('sync-lista');
-
-  // Mostrar botón test si conectado
-  const btnTest = document.getElementById('btn-test-sheets');
-  if (btnTest) btnTest.style.display = gAccessToken ? 'inline-flex' : 'none';
   if (!lista.length) {
     cont.innerHTML = '<p style="color:var(--texto2);font-size:13px;padding:12px 0">No hay visitas guardadas para sincronizar.</p>';
     return;
@@ -2330,7 +2321,7 @@ async function subirArchivoDrive(blob, nombre, carpetaRaiz, subCarpeta) {
   let rootId = await buscarCarpetaDrive(carpetaRaiz, null);
   if (!rootId) rootId = await crearCarpetaDrive(carpetaRaiz, null);
 
-  // 2. Subcarpeta de parque dentro de la raíz
+  // 2. Subcarpeta de parque
   let folderId = rootId;
   if (subCarpeta) {
     let subId = await buscarCarpetaDrive(subCarpeta, rootId);
@@ -2338,18 +2329,48 @@ async function subirArchivoDrive(blob, nombre, carpetaRaiz, subCarpeta) {
     folderId = subId;
   }
 
-  const metadata = { name: nombre, mimeType: 'application/msword', parents: [folderId] };
-  const form = new FormData();
-  form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
-  form.append('file', blob);
+  // 3. Buscar si ya existe un archivo con ese nombre en esa carpeta
+  const archivoExistenteId = await buscarArchivoDrive(nombre, folderId);
 
-  const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${gAccessToken}` },
-    body: form
-  });
-  if (!res.ok) throw new Error('Drive upload failed: ' + res.status);
-  return await res.json();
+  if (archivoExistenteId) {
+    // Actualizar el archivo existente (sin crear copia)
+    const res = await fetch(
+      `https://www.googleapis.com/upload/drive/v3/files/${archivoExistenteId}?uploadType=media`,
+      {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${gAccessToken}`,
+          'Content-Type': 'application/msword'
+        },
+        body: blob
+      }
+    );
+    if (!res.ok) throw new Error('Drive update failed: ' + res.status);
+    return await res.json();
+  } else {
+    // Crear archivo nuevo
+    const metadata = { name: nombre, mimeType: 'application/msword', parents: [folderId] };
+    const form = new FormData();
+    form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+    form.append('file', blob);
+    const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${gAccessToken}` },
+      body: form
+    });
+    if (!res.ok) throw new Error('Drive upload failed: ' + res.status);
+    return await res.json();
+  }
+}
+
+async function buscarArchivoDrive(nombre, parentId) {
+  const q = `name='${nombre}' and '${parentId}' in parents and trashed=false and mimeType!='application/vnd.google-apps.folder'`;
+  const res = await fetch(
+    `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id,name)`,
+    { headers: { Authorization: `Bearer ${gAccessToken}` } }
+  );
+  const data = await res.json();
+  return data.files?.[0]?.id || null;
 }
 
 async function buscarCarpetaDrive(nombre, parentId) {

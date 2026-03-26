@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Cuaderno de Campo — ENGIE v13</title>
+<title>Cuaderno de Campo — ENGIE v14</title>
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBnmL9E_YOvPD-4N_jvsqPrl1VlBcuErO8"></script>
 <style>
 :root {
@@ -2133,7 +2133,15 @@ async function descargarFotos() {
 // UTILIDADES
 // ══════════════════════════════════════════════
 function descargar(contenido, nombre, tipo) {
-  const blob=new Blob([contenido],{type:tipo});
+  let blob;
+  if (tipo === 'application/msword') {
+    // Word necesita UTF-8 explícito — usar TextEncoder para evitar corrupción de tildes y ñ
+    const encoder = new TextEncoder();
+    const bytes = encoder.encode(contenido);
+    blob = new Blob([bytes], {type: 'application/msword;charset=utf-8'});
+  } else {
+    blob = new Blob([contenido], {type: tipo});
+  }
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a'); a.href=url; a.download=nombre; a.click();
   setTimeout(()=>URL.revokeObjectURL(url),1000);
@@ -2441,21 +2449,111 @@ async function subirTodasPendientes() {
 }
 
 function generarWordBlob(v, cads) {
-  // Reutiliza la lógica de _exportWordDatos pero devuelve Blob en lugar de descargar
+  // Genera el mismo HTML que _exportWordDatos y devuelve Blob UTF-8 para Drive
   const pInfo = PARQUES[v.parque] || {};
   const pNombre = pInfo.nombre || v.parque || '—';
   const pNombreMayus = pNombre.toUpperCase().replace('PARQUE EÓLICO','PARQUE EOLICO');
   const municipio = v.municipio || pInfo.municipio || '—';
   const provincia = pInfo.provincia || '—';
-  const css = `body{font-family:Arial,sans-serif;font-size:10pt;margin:2cm}table{border-collapse:collapse;width:100%;margin-bottom:8px}th{background:#2e7d32;color:white;font-weight:bold;font-size:9pt;padding:5px 8px;border:1px solid #b0bec5}td{padding:5px 8px;border:1px solid #b0bec5;font-size:10pt;vertical-align:top}.sub{font-size:8pt;color:#546e7a;font-weight:bold;text-transform:uppercase;display:block;margin-bottom:2px}.enc{font-size:12pt;font-weight:bold;text-align:center;border:2px solid #1a5c20;padding:8px;margin-bottom:14px;background:#f1f8e9;color:#1a5c20}.pb{page-break-before:always}em{font-style:italic}`;
-  const enc = `FICHA SEGUIMIENTO AMBIENTAL ${pNombreMayus}<br>TÉRMINO MUNICIPAL DE ${municipio.toUpperCase()} (${provincia.toUpperCase()})`;
-  let doc = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset="UTF-8"><style>${css}</style></head><body><div class="enc">${enc}</div><table><tr><th colspan="6">Datos generales</th></tr><tr><td colspan="2">${v.periodo||'—'}</td><td>${fmtFecha(v.fecha)}</td><td>${v.hora_inicio||'—'}</td><td>${v.hora_fin||'—'}</td><td>${v.observador||'—'}</td></tr></table>`;
-  cads.forEach(c => {
-    const mapaUrl = c.lat && c.lon ? `https://maps.googleapis.com/maps/api/staticmap?center=${c.lat},${c.lon}&zoom=17&size=400x280&maptype=satellite&markers=color:red%7C${c.lat},${c.lon}&key=${GMAPS_STATIC_KEY}` : null;
-    doc += `<div class="pb"></div><div class="enc">${enc}</div><table><tr><th colspan="4">Cadáver ${c.num||''} — ${c.referencia||''}</th></tr><tr><td>${c.especie_comun||'—'}</td><td>Aerog. ${c.aerogenerador||'—'}</td><td>UTM X: ${c.utmX||'—'}</td><td>UTM Y: ${c.utmY||'—'}</td></tr><tr><td colspan="4">${c.descripcion||'—'}</td></tr></table>${mapaUrl?`<img src="${mapaUrl}" style="max-width:400px">`:''}`
-  });
+  const municipioMayus = municipio.toUpperCase();
+  const provinciaMayus = provincia.toUpperCase();
+
+  const css = `
+    body{font-family:Arial,sans-serif;font-size:9.5pt;margin:1.5cm 1.8cm;color:#000}
+    table{border-collapse:collapse;width:100%;font-size:9pt}
+    td{padding:4px 6px;border:1px solid #aaa;vertical-align:top;line-height:1.4}
+    .sg td{background:#d0d0d0;font-weight:bold;padding:3px 6px;border:1px solid #888}
+    .lb{font-weight:bold} em{font-style:italic} sup{font-size:6.5pt}
+    .pb{page-break-before:always}
+    img{max-width:100%;height:auto;display:block}
+  `;
+
+  const cabHtml = (tipo) => `
+<table style="width:100%;border-collapse:collapse;margin-bottom:0.7cm"><tr>
+<td style="width:52px;padding:0;border:none;vertical-align:top"><div style="width:48px;height:48px;background:#888"></div></td>
+<td style="border:none;vertical-align:top;padding:0 0 0 12px;border-bottom:1.5px solid #555;padding-bottom:8px">
+  <span style="font-size:13.5pt;font-weight:bold;display:block;line-height:1.2">${tipo}</span>
+  <span style="font-size:9pt;display:block;line-height:1.5">SEGUIMIENTO AMBIENTAL ${pNombreMayus}</span>
+  <span style="font-size:9pt;display:block;line-height:1.5">TÉRMINO MUNICIPAL DE ${municipioMayus} (${provinciaMayus})</span>
+</td></tr></table>`;
+
+  const periodoStr = v.periodo || '—';
+  const invRows = cads.length
+    ? cads.map(c => `<tr><td>${c.referencia||''}</td><td>${c.especie_comun||''}${c.especie_cientifico?` (<em>${c.especie_cientifico}</em>)`:''}</td><td>${c.aerogenerador||''}</td><td>${c.observaciones||''}</td></tr>`).join('')
+    : `<tr style="height:20px"><td></td><td></td><td></td><td></td></tr><tr style="height:20px"><td></td><td></td><td></td><td></td></tr><tr><td colspan="4" style="font-weight:bold;padding:5px 6px">No se han encontrado restos</td></tr>`;
+
+  let doc = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns:v='urn:schemas-microsoft-com:vml' xmlns='http://www.w3.org/TR/REC-html40'>
+<head><meta charset="UTF-8"><!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View></w:WordDocument></xml><![endif]-->
+<style>${css}</style></head><body>
+${cabHtml('FICHA DE CAMPO')}
+<table style="margin-bottom:0.7cm">
+<tr class="sg"><td colspan="5">Datos generales</td></tr>
+<tr><td colspan="2"><span class="lb">Visita correspondiente al mes de</span> ${periodoStr}</td><td><span class="lb">Fecha</span> ${fmtFecha(v.fecha)}</td><td><span class="lb">Hora inicio</span> ${v.hora_inicio||'—'}</td><td><span class="lb">Hora fin</span> ${v.hora_fin||'—'}</td></tr>
+<tr><td colspan="5"><span class="lb">Observador</span> ${v.observador||'—'}</td></tr>
+</table>
+<table style="margin-bottom:1.7cm">
+<tr class="sg"><td colspan="6">Tiempo atmosférico</td></tr>
+<tr><td><span class="lb">Temperatura<sup> (1)</sup></span><br>${v.temperatura||'—'}</td><td><span class="lb">Visibilidad</span><br>${v.visibilidad||'—'}</td><td><span class="lb">Dir. viento</span><br>${v.viento_dir||'—'}</td><td><span class="lb">Velocidad<sup> (2)</sup></span><br>${v.viento_vel||'—'}</td><td><span class="lb">Precipitación</span><br>${v.precipitacion||'—'}</td><td><span class="lb">Nubosidad</span><br>${v.nubosidad||'—'}</td></tr>
+</table>
+<p style="font-size:9.5pt;font-weight:bold;text-transform:uppercase;margin-bottom:4px">Inventario de restos</p>
+<table><tr class="sg"><td style="width:15%">Nº Ref</td><td style="width:37%">Especie</td><td style="width:13%">Nº aerogenerador</td><td>Observaciones</td></tr>${invRows}</table>
+<p style="font-size:7.5pt;color:#444;line-height:1.6;border-top:1px solid #ccc;padding-top:8px;margin-top:20px">(1) Temperatura: mucho calor (+30°) · calor (25-29°) · buena (18-24°) · fresca (12-17°) · frío (5-11°) · muy frío (-5°)<br>(2) Velocidad: nula · brisa · viento medio · viento fuerte · viento muy fuerte</p>`;
+
+  for (const c of cads) {
+    const mapaUrl = (c.lat && c.lon)
+      ? `https://maps.googleapis.com/maps/api/staticmap?center=${c.lat},${c.lon}&zoom=17&size=480x360&maptype=satellite&markers=color:red%7C${c.lat},${c.lon}&key=${GMAPS_STATIC_KEY}`
+      : null;
+
+    const fotosList = (c.fotos||[]).slice(0,2);
+    const fotosHtml = fotosList.length ? `
+<p style="font-size:9.5pt;font-weight:bold;background:#d0d0d0;padding:3px 8px;border:1px solid #aaa;text-align:center;margin:0">Fotografías</p>
+<table style="margin-bottom:0"><tr>
+${fotosList.map(f => {
+  const src = f.startsWith('data:') ? f : `data:image/jpeg;base64,${f}`;
+  return `<td style="width:50%;padding:6px;border:1px solid #aaa;border-top:none;text-align:center"><img src="${src}" style="max-width:100%;max-height:220px;display:block;margin:0 auto"></td>`;
+}).join('')}
+${fotosList.length < 2 ? '<td style="width:50%;border:1px solid #aaa;border-top:none"></td>' : ''}
+</tr></table>` : '';
+
+    doc += `<div class="pb"></div>
+${cabHtml('FICHA DE RESTOS')}
+<table style="margin-bottom:6px">
+<tr class="sg"><td colspan="4">Datos generales</td></tr>
+<tr><td style="width:14%" class="lb">Parque</td><td style="width:36%">${pNombre}</td><td style="width:20%" class="lb">Término municipal</td><td>${municipio}</td></tr>
+<tr><td class="lb">Fecha</td><td>${fmtFecha(v.fecha)}</td><td class="lb">Hora</td><td>${c.hora||'—'}</td></tr>
+<tr><td class="lb" colspan="2">Tiempo estimado desde la muerte</td><td colspan="2">${c.tiempo_muerte||'—'}</td></tr>
+</table>
+<table style="margin-bottom:6px">
+<tr class="sg"><td colspan="4">Datos de la especie</td></tr>
+<tr><td style="width:22%" class="lb">Nº referencia</td><td style="width:28%">${c.referencia||'—'}</td><td style="width:24%" class="lb">Sexo</td><td>${c.sexo||'—'}</td></tr>
+<tr><td class="lb">Especie</td><td>${c.especie_comun||'—'}${c.especie_cientifico?` (<em>${c.especie_cientifico}</em>)`:''}</td><td class="lb">Edad</td><td>${c.edad||'—'}</td></tr>
+</table>
+<table style="margin-bottom:8px">
+<tr class="sg"><td colspan="4">Localización</td></tr>
+<tr><td style="width:20%" class="lb">Nº de aerogenerador</td><td style="width:24%">${c.aerogenerador||'—'}</td><td style="white-space:nowrap" class="lb">Hábitat</td><td>${c.habitat||'—'}</td></tr>
+<tr><td class="lb">Coord. UTM ETRS89</td><td>X &nbsp;${c.utmX||'—'} &nbsp;&nbsp; Y &nbsp;${c.utmY||'—'}</td><td style="white-space:nowrap" class="lb">Distancia aerogenerador</td><td>${c.distancia||'—'}</td></tr>
+<tr><td style="white-space:nowrap" class="lb">Diagnóstico mortandad</td><td colspan="3">${c.diagnostico||'—'}</td></tr>
+<tr><td class="lb">Observaciones</td><td colspan="3">${c.observaciones||'—'}</td></tr>
+</table>
+<table style="width:100%;border-collapse:collapse;margin-bottom:8px"><tr>
+<td style="width:50%;padding-right:8px;border:none;vertical-align:top">
+  <table style="width:100%;height:170px;border-collapse:collapse"><tr><td style="border:1px solid #aaa;background:#c8d8c0;text-align:center;padding:10px;font-size:8pt;color:#444;vertical-align:middle">
+    ${mapaUrl ? `<img src="${mapaUrl}" style="max-width:100%;max-height:160px;display:block;margin:0 auto">` : '(Sin coordenadas GPS)'}
+  </td></tr></table>
+</td>
+<td style="width:50%;border:none;vertical-align:top">
+  <table style="width:100%;height:170px;border-collapse:collapse">
+  <tr><td style="border:1px solid #aaa;border-bottom:none;background:#d0d0d0;font-weight:bold;font-size:9pt;padding:3px 8px">Descripción de los restos</td></tr>
+  <tr><td style="border:1px solid #aaa;padding:7px 8px;font-size:9pt;line-height:1.5;vertical-align:top">${c.descripcion||'—'}</td></tr>
+  </table>
+</td></tr></table>
+${fotosHtml}`;
+  }
+
   doc += '</body></html>';
-  return new Blob([doc], { type: 'application/msword' });
+  // UTF-8 explícito para evitar corrupción de tildes y caracteres especiales
+  const encoder = new TextEncoder();
+  return new Blob([encoder.encode(doc)], { type: 'application/msword;charset=utf-8' });
 }
 
 async function subirArchivoDrive(blob, nombre, carpetaRaiz, subCarpeta) {

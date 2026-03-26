@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Cuaderno de Campo — ENGIE v14</title>
+<title>Cuaderno de Campo — ENGIE v15</title>
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBnmL9E_YOvPD-4N_jvsqPrl1VlBcuErO8"></script>
 <style>
 :root {
@@ -2076,7 +2076,7 @@ ${fotosHtml}
   }
 
   doc += '</body></html>';
-  descargar(doc, `Ficha_${(v.parque||'parque')}_${v.fecha||'fecha'}.doc`, 'application/msword');
+  descargar(doc, `Ficha_${(v.parque||'parque')}_${v.fecha||'fecha'}.html`, 'text/html;charset=utf-8');
   toast('✓ Word descargado');
 }
 
@@ -2133,15 +2133,10 @@ async function descargarFotos() {
 // UTILIDADES
 // ══════════════════════════════════════════════
 function descargar(contenido, nombre, tipo) {
-  let blob;
-  if (tipo === 'application/msword') {
-    // Word necesita UTF-8 explícito — usar TextEncoder para evitar corrupción de tildes y ñ
-    const encoder = new TextEncoder();
-    const bytes = encoder.encode(contenido);
-    blob = new Blob([bytes], {type: 'application/msword;charset=utf-8'});
-  } else {
-    blob = new Blob([contenido], {type: tipo});
-  }
+  const encoder = new TextEncoder();
+  const blob = (typeof contenido === 'string' && (tipo.includes('html') || tipo.includes('msword')))
+    ? new Blob([encoder.encode(contenido)], {type: tipo})
+    : new Blob([contenido], {type: tipo});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a'); a.href=url; a.download=nombre; a.click();
   setTimeout(()=>URL.revokeObjectURL(url),1000);
@@ -2287,7 +2282,7 @@ async function subirVisita(id) {
   toast('Subiendo ficha Word…');
   try {
     const wordBlob = generarWordBlob(vis.visita || {}, vis.cadaveres || []);
-    const nombreFichero = `Ficha_${vis.visita?.parque||'parque'}_${vis.visita?.fecha||'fecha'}.doc`;
+    const nombreFichero = `Ficha_${vis.visita?.parque||'parque'}_${vis.visita?.fecha||'fecha'}.html`;
     await subirArchivoDrive(wordBlob, nombreFichero, carpetaRaiz, subCarpeta);
     driveOk = true;
   } catch(e) { errMsg += `Word: ${e.message}. `; }
@@ -2553,7 +2548,7 @@ ${fotosHtml}`;
   doc += '</body></html>';
   // UTF-8 explícito para evitar corrupción de tildes y caracteres especiales
   const encoder = new TextEncoder();
-  return new Blob([encoder.encode(doc)], { type: 'application/msword;charset=utf-8' });
+  return new Blob([encoder.encode(doc)], { type: 'text/html;charset=utf-8' });
 }
 
 async function subirArchivoDrive(blob, nombre, carpetaRaiz, subCarpeta) {
@@ -2580,7 +2575,7 @@ async function subirArchivoDrive(blob, nombre, carpetaRaiz, subCarpeta) {
         method: 'PATCH',
         headers: {
           Authorization: `Bearer ${gAccessToken}`,
-          'Content-Type': 'application/msword'
+          'Content-Type': 'text/html;charset=utf-8'
         },
         body: blob
       }
@@ -2589,7 +2584,7 @@ async function subirArchivoDrive(blob, nombre, carpetaRaiz, subCarpeta) {
     return await res.json();
   } else {
     // Crear archivo nuevo
-    const metadata = { name: nombre, mimeType: 'application/msword', parents: [folderId] };
+    const metadata = { name: nombre, mimeType: 'text/html', parents: [folderId] };
     const form = new FormData();
     form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
     form.append('file', blob);

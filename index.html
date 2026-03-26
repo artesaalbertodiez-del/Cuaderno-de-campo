@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Cuaderno de Campo — ENGIE v15</title>
+<title>Cuaderno de Campo — ENGIE v16</title>
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBnmL9E_YOvPD-4N_jvsqPrl1VlBcuErO8"></script>
 <style>
 :root {
@@ -1710,7 +1710,7 @@ function renderHistorial() {
         </table>` : '<p style="padding:6px 0;font-style:italic">Sin cadáveres registrados</p>'}
         <div class="vc-acciones">
           ${esBorador ? `<button class="btn-v btn-sm" onclick="editarVisita('${v.id}')">✏️ Editar</button>` : `<button class="btn-g btn-sm" onclick="reabrirVisita('${v.id}')">🔓 Reabrir</button>`}
-          <button class="btn-a btn-sm" onclick="exportWordHistorial('${v.id}')">📄 Word</button>
+          <button class="btn-a btn-sm" onclick="exportWordHistorial('${v.id}')">📄 PDF</button>
           <button class="btn-n btn-sm" onclick="exportExcelHistorial('${v.id}')">📊 Excel</button>
           <button class="btn-r btn-sm" onclick="eliminarVisita('${v.id}')">🗑 Eliminar</button>
         </div>
@@ -1863,7 +1863,7 @@ function _exportWordDatos(v, cads) {
   const municipioMayus = municipio.toUpperCase();
   const provinciaMayus = provincia.toUpperCase();
 
-  toast('Generando Word…');
+  toast('Generando PDF…');
 
   const css = `
     body{font-family:Arial,sans-serif;font-size:9.5pt;margin:1.5cm 1.8cm;color:#000}
@@ -1893,9 +1893,15 @@ function _exportWordDatos(v, cads) {
     .fotos-tit{background:#d0d0d0;font-weight:bold;font-size:9pt;padding:3px 8px;border:1px solid #aaa;text-align:center;margin-bottom:0}
     .foto-td{width:50%;padding:5px;border:1px solid #aaa;border-top:none;vertical-align:top}
     img{max-width:100%;height:auto;display:block}
+    @page{size:A4;margin:1.5cm 1.8cm}
+    @media print{
+      body{margin:0}
+      .pb{page-break-before:always}
+      table{page-break-inside:avoid}
+      img{max-width:100%;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+      .sg td{-webkit-print-color-adjust:exact;print-color-adjust:exact;background:#d0d0d0!important}
+    }
   `;
-
-  const cabHtml = (tipo) => `
 <table style="width:100%;border-collapse:collapse;margin-bottom:0.7cm">
 <tr>
 <td style="width:52px;padding:0;border:none;vertical-align:top">
@@ -2076,7 +2082,13 @@ ${fotosHtml}
   }
 
   doc += '</body></html>';
-  descargar(doc, `Ficha_${(v.parque||'parque')}_${v.fecha||'fecha'}.html`, 'text/html;charset=utf-8');
+  // Abrir en ventana nueva y lanzar diálogo de impresión (guardar como PDF)
+  const win = window.open('', '_blank');
+  if (!win) { toast('⚠ Permite ventanas emergentes para generar el PDF'); return; }
+  win.document.write(doc);
+  win.document.close();
+  win.focus();
+  setTimeout(() => { win.print(); }, 800);
   toast('✓ Word descargado');
 }
 
@@ -2461,6 +2473,14 @@ function generarWordBlob(v, cads) {
     .lb{font-weight:bold} em{font-style:italic} sup{font-size:6.5pt}
     .pb{page-break-before:always}
     img{max-width:100%;height:auto;display:block}
+    @page{size:A4;margin:1.5cm 1.8cm}
+    @media print{
+      body{margin:0}
+      .pb{page-break-before:always}
+      table{page-break-inside:avoid}
+      img{max-width:100%;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+      .sg td{-webkit-print-color-adjust:exact;print-color-adjust:exact;background:#d0d0d0!important}
+    }
   `;
 
   const cabHtml = (tipo) => `

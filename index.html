@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Cuaderno de Campo — ENGIE v12</title>
+<title>Cuaderno de Campo — ENGIE v13</title>
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBnmL9E_YOvPD-4N_jvsqPrl1VlBcuErO8"></script>
 <style>
 :root {
@@ -1862,28 +1862,65 @@ function _exportWordDatos(v, cads) {
   const provincia = pInfo.provincia || '—';
   const municipioMayus = municipio.toUpperCase();
   const provinciaMayus = provincia.toUpperCase();
-  const subparque = v.subparque || '';
-  const pFull = subparque ? `${pNombre} — ${subparque}` : pNombre;
-
-  const encabezadoCampo = `FICHA DE CAMPO SEGUIMIENTO AMBIENTAL ${pNombreMayus}<br>TÉRMINO MUNICIPAL DE ${municipioMayus} (${provinciaMayus})`;
-  const encabezadoRestos = `FICHA DE RESTOS SEGUIMIENTO AMBIENTAL ${pNombreMayus}<br>TÉRMINO MUNICIPAL DE ${municipioMayus} (${provinciaMayus})`;
-
-  const css = `
-    body{font-family:Arial,sans-serif;font-size:10pt;margin:2cm}
-    .enc{font-size:12pt;font-weight:bold;text-align:center;border:2px solid #1a5c20;padding:8px 12px;margin-bottom:14px;background:#f1f8e9;color:#1a5c20}
-    table{border-collapse:collapse;width:100%;margin-bottom:8px}
-    th{background:#2e7d32;color:white;font-weight:bold;font-size:9pt;padding:5px 8px;border:1px solid #b0bec5;text-align:left}
-    td{padding:5px 8px;border:1px solid #b0bec5;font-size:10pt;vertical-align:top}
-    .sub{font-size:8pt;color:#546e7a;font-weight:bold;text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:2px}
-    .pb{page-break-before:always}
-    em{font-style:italic}
-    img{max-width:100%;height:auto;display:block;margin:4px auto}
-  `;
 
   toast('Generando Word…');
-  // Mapa: usar URL directa (Word de escritorio la carga; en móvil aparece vacío)
-  const mapaB64 = {};
-  cads.forEach(c => { const u = capturarImgMapa(c); if(u) mapaB64[c.id] = u; });
+
+  const css = `
+    body{font-family:Arial,sans-serif;font-size:9.5pt;margin:1.5cm 1.8cm;color:#000}
+    table{border-collapse:collapse;width:100%;font-size:9pt}
+    td{padding:4px 6px;border:1px solid #aaa;vertical-align:top;line-height:1.4}
+    .sg td{background:#d0d0d0;font-weight:bold;padding:3px 6px;border:1px solid #888}
+    .lb{font-weight:bold}
+    em{font-style:italic}
+    sup{font-size:6.5pt}
+    .pb{page-break-before:always}
+    .cab{display:flex;align-items:flex-start;gap:12px;border-bottom:1.5px solid #555;padding-bottom:8px;margin-bottom:0.7cm}
+    .cab-ico{width:48px;height:48px;background:#888;flex-shrink:0;display:inline-block}
+    .cab-tipo{font-size:13.5pt;font-weight:bold;display:block;line-height:1.2}
+    .cab-sub{font-size:9pt;display:block;line-height:1.5}
+    .inv-tit{font-size:9.5pt;font-weight:bold;text-transform:uppercase;margin-bottom:4px;margin-top:0}
+    .gap07{margin-bottom:0.7cm}
+    .gap17{margin-bottom:1.7cm}
+    .pie{font-size:7.5pt;color:#444;line-height:1.6;border-top:1px solid #ccc;padding-top:8px;margin-top:auto}
+    .fv td{height:20px}
+    .mapa-desc{display:table;width:100%;margin-bottom:8px}
+    .mapa-td{display:table-cell;width:50%;vertical-align:top;padding-right:8px}
+    .desc-td{display:table-cell;width:50%;vertical-align:top}
+    .mapa-box{border:1px solid #aaa;background:#c8d8c0;height:170px;text-align:center;padding:10px;font-size:8pt;color:#444}
+    .desc-box{border:1px solid #aaa;height:170px;display:flex;flex-direction:column}
+    .desc-tit{background:#d0d0d0;font-weight:bold;font-size:9pt;padding:3px 8px;border-bottom:1px solid #aaa}
+    .desc-txt{padding:7px 8px;font-size:9pt;line-height:1.5;flex:1}
+    .fotos-tit{background:#d0d0d0;font-weight:bold;font-size:9pt;padding:3px 8px;border:1px solid #aaa;text-align:center;margin-bottom:0}
+    .foto-td{width:50%;padding:5px;border:1px solid #aaa;border-top:none;vertical-align:top}
+    img{max-width:100%;height:auto;display:block}
+  `;
+
+  const cabHtml = (tipo) => `
+<table style="width:100%;border-collapse:collapse;margin-bottom:0.7cm">
+<tr>
+<td style="width:52px;padding:0;border:none;vertical-align:top">
+  <div style="width:48px;height:48px;background:#888"></div>
+</td>
+<td style="border:none;vertical-align:top;padding:0 0 0 12px;border-bottom:1.5px solid #555;padding-bottom:8px">
+  <span style="font-size:13.5pt;font-weight:bold;display:block;line-height:1.2">${tipo}</span>
+  <span style="font-size:9pt;display:block;line-height:1.5">SEGUIMIENTO AMBIENTAL ${pNombreMayus}</span>
+  <span style="font-size:9pt;display:block;line-height:1.5">TÉRMINO MUNICIPAL DE ${municipioMayus} (${provinciaMayus})</span>
+</td>
+</tr>
+</table>`;
+
+  // ── HOJA 1: FICHA DE CAMPO ──
+  const periodoStr = v.periodo || '—';
+  const invRows = cads.length
+    ? cads.map(c => `<tr>
+        <td>${c.referencia||''}</td>
+        <td>${c.especie_comun||''}${c.especie_cientifico?` (<em>${c.especie_cientifico}</em>)`:''}</td>
+        <td>${c.aerogenerador||''}</td>
+        <td>${c.observaciones||''}</td>
+      </tr>`).join('')
+    : `<tr style="height:20px"><td></td><td></td><td></td><td></td></tr>
+       <tr style="height:20px"><td></td><td></td><td></td><td></td></tr>
+       <tr><td colspan="4" style="font-weight:bold;padding:5px 6px">No se han encontrado restos</td></tr>`;
 
   let doc = `<html xmlns:o='urn:schemas-microsoft-com:office:office'
     xmlns:w='urn:schemas-microsoft-com:office:word'
@@ -1893,120 +1930,145 @@ function _exportWordDatos(v, cads) {
 <!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View></w:WordDocument></xml><![endif]-->
 <style>${css}</style></head><body>
 
-<div class="enc">${encabezadoCampo}</div>
+${cabHtml('FICHA DE CAMPO')}
 
-<table>
-<tr><th colspan="6">Datos generales</th></tr>
+<table style="margin-bottom:0.7cm">
+<tr class="sg"><td colspan="5">Datos generales</td></tr>
 <tr>
-  <td colspan="2"><span class="sub">Visita correspondiente al mes de</span>${v.periodo||'—'}</td>
-  <td><span class="sub">Fecha</span>${fmtFecha(v.fecha)}</td>
-  <td><span class="sub">Hora inicio</span>${v.hora_inicio||'—'}</td>
-  <td><span class="sub">Hora fin</span>${v.hora_fin||'—'}</td>
-  <td><span class="sub">Observador</span>${v.observador||'—'}</td>
+  <td colspan="2"><span class="lb">Visita correspondiente al mes de</span> ${periodoStr}</td>
+  <td><span class="lb">Fecha</span> ${fmtFecha(v.fecha)}</td>
+  <td><span class="lb">Hora inicio</span> ${v.hora_inicio||'—'}</td>
+  <td><span class="lb">Hora fin</span> ${v.hora_fin||'—'}</td>
+</tr>
+<tr><td colspan="5"><span class="lb">Observador</span> ${v.observador||'—'}</td></tr>
+</table>
+
+<table style="margin-bottom:1.7cm">
+<tr class="sg"><td colspan="6">Tiempo atmosférico</td></tr>
+<tr>
+  <td><span class="lb">Temperatura<sup> (1)</sup></span><br>${v.temperatura||'—'}</td>
+  <td><span class="lb">Visibilidad</span><br>${v.visibilidad||'—'}</td>
+  <td><span class="lb">Dir. viento</span><br>${v.viento_dir||'—'}</td>
+  <td><span class="lb">Velocidad<sup> (2)</sup></span><br>${v.viento_vel||'—'}</td>
+  <td><span class="lb">Precipitación</span><br>${v.precipitacion||'—'}</td>
+  <td><span class="lb">Nubosidad</span><br>${v.nubosidad||'—'}</td>
 </tr>
 </table>
 
+<p style="font-size:9.5pt;font-weight:bold;text-transform:uppercase;margin-bottom:4px">Inventario de restos</p>
 <table>
-<tr><th colspan="6">Tiempo atmosférico</th></tr>
-<tr>
-  <td><span class="sub">Temperatura</span>${v.temperatura||'—'}</td>
-  <td><span class="sub">Visibilidad</span>${v.visibilidad||'—'}</td>
-  <td><span class="sub">Dirección viento</span>${v.viento_dir||'—'}</td>
-  <td><span class="sub">Velocidad</span>${v.viento_vel||'—'}</td>
-  <td><span class="sub">Precipitación</span>${v.precipitacion||'—'}</td>
-  <td><span class="sub">Nubosidad</span>${v.nubosidad||'—'}</td>
-</tr>
+<tr class="sg"><td style="width:15%">Nº Ref</td><td style="width:37%">Especie</td><td style="width:13%">Nº aerogenerador</td><td>Observaciones</td></tr>
+${invRows}
 </table>
 
-<table>
-<tr><th>Nº Ref</th><th>Especie</th><th>Nº Aerogenerador</th><th>Observaciones</th></tr>
-${cads.length ? cads.map(c=>`
-<tr>
-  <td>${c.referencia||''}</td>
-  <td>${c.especie_comun||''}${c.especie_cientifico?` (<em>${c.especie_cientifico}</em>)`:''}</td>
-  <td>${c.aerogenerador||''}</td>
-  <td>${c.observaciones||''}</td>
-</tr>`).join('') : '<tr><td colspan="4" style="text-align:center;color:#999;font-style:italic">Sin cadáveres registrados</td></tr>'}
-</table>`;
+<p style="font-size:7.5pt;color:#444;line-height:1.6;border-top:1px solid #ccc;padding-top:8px;margin-top:20px">
+(1) Temperatura: mucho calor (+30°) · calor (25-29°) · buena (18-24°) · fresca (12-17°) · frío (5-11°) · muy frío (-5°)<br>
+(2) Velocidad: nula · brisa · viento medio · viento fuerte · viento muy fuerte
+</p>`;
 
+  // ── HOJAS 2+: FICHA DE RESTOS por cadáver ──
   for (const c of cads) {
-    const imgMapa = mapaB64[c.id] || null;
+    const mapaUrl = (c.lat && c.lon)
+      ? `https://maps.googleapis.com/maps/api/staticmap?center=${c.lat},${c.lon}&zoom=17&size=480x360&maptype=satellite&markers=color:red%7C${c.lat},${c.lon}&key=AIzaSyBFgl5TwEQcgCmjFzxWoLSGAEOwHEkOdnw`
+      : null;
 
-    // Fotos: Word renderiza base64 solo si se usa mso-style correcto
-    // Convertimos cada foto a un bloque img con estilo inline que Word acepta
-    const fotosHtml = c.fotos && c.fotos.length
-      ? `<table style="width:100%;border-collapse:collapse;margin-bottom:8px">
-           <tr><th style="background:#2e7d32;color:white;font-size:9pt;padding:5px 8px;border:1px solid #b0bec5;text-align:left" colspan="2">Fotografías</th></tr>
-           ${c.fotos.reduce((acc,f,i) => {
-               if (i % 2 === 0) acc.push([f]);
-               else acc[acc.length-1].push(f);
-               return acc;
-             }, []).map(par =>
-               `<tr>${par.map(f => {
-                 // Asegurar que el dataURL tiene el prefijo correcto
-                 const src = f.startsWith('data:') ? f : `data:image/jpeg;base64,${f}`;
-                 return `<td style="text-align:center;padding:6px;width:50%;border:1px solid #b0bec5">
-                   <img src="${src}" width="220" height="165" style="max-width:220px;max-height:165px;display:block;margin:0 auto">
-                 </td>`;
-               }).join('')}</tr>`
-             ).join('')}
-         </table>`
-      : '';
+    // Fotos: máximo 2, con reborde blanco (padding en td)
+    const fotosList = (c.fotos||[]).slice(0,2);
+    const fotosHtml = fotosList.length ? `
+<p style="font-size:9.5pt;font-weight:bold;background:#d0d0d0;padding:3px 8px;border:1px solid #aaa;text-align:center;margin:0">Fotografías</p>
+<table style="margin-bottom:0"><tr>
+${fotosList.map(f => {
+  const src = f.startsWith('data:') ? f : `data:image/jpeg;base64,${f}`;
+  return `<td style="width:50%;padding:6px;border:1px solid #aaa;border-top:none;text-align:center">
+    <img src="${src}" style="max-width:100%;max-height:220px;display:block;margin:0 auto">
+  </td>`;
+}).join('')}
+${fotosList.length < 2 ? '<td style="width:50%;border:1px solid #aaa;border-top:none"></td>' : ''}
+</tr></table>` : '';
 
     doc += `
 <div class="pb"></div>
-<div class="enc">${encabezadoRestos}</div>
 
-<table>
-<tr><th colspan="6">Datos generales</th></tr>
+${cabHtml('FICHA DE RESTOS')}
+
+<table style="margin-bottom:6px">
+<tr class="sg"><td colspan="4">Datos generales</td></tr>
 <tr>
-  <td colspan="2"><span class="sub">Parque eólico</span>${pFull}</td>
-  <td><span class="sub">Término municipal</span>${municipio}</td>
-  <td><span class="sub">Fecha</span>${fmtFecha(v.fecha)}</td>
-  <td><span class="sub">Hora</span>${c.hora||'—'}</td>
-  <td><span class="sub">Tiempo desde la muerte</span>${c.tiempo_muerte||'—'}</td>
+  <td style="width:14%" class="lb">Parque</td>
+  <td style="width:36%">${pNombre}</td>
+  <td style="width:20%" class="lb">Término municipal</td>
+  <td>${municipio}</td>
+</tr>
+<tr>
+  <td class="lb">Fecha</td>
+  <td>${fmtFecha(v.fecha)}</td>
+  <td class="lb">Hora</td>
+  <td>${c.hora||'—'}</td>
+</tr>
+<tr>
+  <td class="lb" colspan="2">Tiempo estimado desde la muerte</td>
+  <td colspan="2">${c.tiempo_muerte||'—'}</td>
 </tr>
 </table>
 
-<table>
-<tr><th colspan="4">Datos de la especie</th></tr>
+<table style="margin-bottom:6px">
+<tr class="sg"><td colspan="4">Datos de la especie</td></tr>
 <tr>
-  <td><span class="sub">Nº referencia</span>${c.referencia||'—'}</td>
-  <td colspan="2"><span class="sub">Especie</span>${c.especie_comun||'—'}${c.especie_cientifico?` (<em>${c.especie_cientifico}</em>)`:''}</td>
-  <td><span class="sub">Sexo</span>${c.sexo||'—'}</td>
+  <td style="width:22%" class="lb">Nº referencia</td>
+  <td style="width:28%">${c.referencia||'—'}</td>
+  <td style="width:24%" class="lb">Sexo</td>
+  <td>${c.sexo||'—'}</td>
 </tr>
 <tr>
-  <td><span class="sub">Edad</span>${c.edad||'—'}</td>
-  <td><span class="sub">Tamaño</span>${c.tamano||'—'}</td>
-  <td><span class="sub">Estado cadáver</span>${c.estado_cadaver||'—'}</td>
-  <td><span class="sub">Estado descomposición</span>${c.estado_descomposicion||'—'}</td>
+  <td class="lb">Especie</td>
+  <td>${c.especie_comun||'—'}${c.especie_cientifico?` (<em>${c.especie_cientifico}</em>)`:''}</td>
+  <td class="lb">Edad</td>
+  <td>${c.edad||'—'}</td>
 </tr>
 </table>
 
-<table>
-<tr><th colspan="4">Localización</th></tr>
+<table style="margin-bottom:8px">
+<tr class="sg"><td colspan="4">Localización</td></tr>
 <tr>
-  <td><span class="sub">Nº aerogenerador</span>${c.aerogenerador||'—'}</td>
-  <td><span class="sub">Dirección</span>${c.direccion_aero||'—'}</td>
-  <td><span class="sub">Hábitat</span>${c.habitat||'—'}</td>
-  <td><span class="sub">Coordenadas UTM ETRS89</span>X: ${c.utmX||'—'} Y: ${c.utmY||'—'}</td>
+  <td style="width:20%" class="lb">Nº de aerogenerador</td>
+  <td style="width:24%">${c.aerogenerador||'—'}</td>
+  <td style="white-space:nowrap" class="lb">Hábitat</td>
+  <td>${c.habitat||'—'}</td>
 </tr>
 <tr>
-  <td colspan="2"><span class="sub">Distancia al aerogenerador</span>${c.distancia||'—'}</td>
-  <td colspan="2"><span class="sub">Causa probable de mortalidad</span>${c.diagnostico||'—'}</td>
+  <td class="lb">Coord. UTM ETRS89</td>
+  <td>X &nbsp;${c.utmX||'—'} &nbsp;&nbsp; Y &nbsp;${c.utmY||'—'}</td>
+  <td style="white-space:nowrap" class="lb">Distancia aerogenerador</td>
+  <td>${c.distancia||'—'}</td>
 </tr>
 <tr>
-  <td colspan="2"><span class="sub">Actuaciones</span>${c.actuaciones||'—'}</td>
-  <td colspan="2"><span class="sub">Infraestructura</span>${c.infraestructura||'—'}</td>
+  <td style="white-space:nowrap" class="lb">Diagnóstico mortandad</td>
+  <td colspan="3">${c.diagnostico||'—'}</td>
 </tr>
-<tr><td colspan="4"><span class="sub">Observaciones</span>${c.observaciones||'—'}</td></tr>
+<tr>
+  <td class="lb">Observaciones</td>
+  <td colspan="3">${c.observaciones||'—'}</td>
+</tr>
 </table>
 
-${imgMapa ? `<table><tr><th>Localización en mapa</th></tr><tr><td style="text-align:center"><img src="${imgMapa}" style="max-width:480px"></td></tr></table>` : ''}
-
-<table>
-<tr><th>Descripción de los restos</th></tr>
-<tr><td style="min-height:60px">${c.descripcion||'—'}</td></tr>
+<table style="width:100%;border-collapse:collapse;margin-bottom:8px">
+<tr>
+<td style="width:50%;padding-right:8px;border:none;vertical-align:top">
+  <table style="width:100%;height:170px;border-collapse:collapse">
+  <tr><td style="border:1px solid #aaa;background:#c8d8c0;text-align:center;padding:10px;font-size:8pt;color:#444;vertical-align:middle">
+    ${mapaUrl
+      ? `<img src="${mapaUrl}" style="max-width:100%;max-height:160px;display:block;margin:0 auto">`
+      : '(Sin coordenadas GPS)'}
+  </td></tr>
+  </table>
+</td>
+<td style="width:50%;border:none;vertical-align:top">
+  <table style="width:100%;height:170px;border-collapse:collapse">
+  <tr><td style="border:1px solid #aaa;border-bottom:none;background:#d0d0d0;font-weight:bold;font-size:9pt;padding:3px 8px">Descripción de los restos</td></tr>
+  <tr><td style="border:1px solid #aaa;padding:7px 8px;font-size:9pt;line-height:1.5;vertical-align:top">${c.descripcion||'—'}</td></tr>
+  </table>
+</td>
+</tr>
 </table>
 
 ${fotosHtml}
@@ -2014,7 +2076,6 @@ ${fotosHtml}
   }
 
   doc += '</body></html>';
-
   descargar(doc, `Ficha_${(v.parque||'parque')}_${v.fecha||'fecha'}.doc`, 'application/msword');
   toast('✓ Word descargado');
 }

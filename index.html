@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Cuaderno de Campo — ENGIE v16</title>
+<title>Cuaderno de Campo — ENGIE v17</title>
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBnmL9E_YOvPD-4N_jvsqPrl1VlBcuErO8"></script>
 <style>
 :root {
@@ -2320,6 +2320,16 @@ async function subirVisita(id) {
     sheetsOk = true;
   }
 
+  // ── 4. CSV a Drive ──
+  toast('Subiendo CSV a Drive…');
+  try {
+    const csvContenido = generarCSVVisita(vis);
+    const encoder = new TextEncoder();
+    const csvBlob = new Blob([encoder.encode(csvContenido)], { type: 'text/csv;charset=utf-8' });
+    const csvNombre = `Datos_${vis.visita?.parque||'parque'}_${vis.visita?.fecha||'fecha'}.csv`;
+    await subirArchivoDrive(csvBlob, csvNombre, carpetaRaiz, subCarpeta);
+  } catch(e) { errMsg += `CSV: ${e.message}. `; }
+
   // ── Resultado ──
   const todoOk = driveOk && sheetsOk;
   let lista = getVisitas();
@@ -2666,7 +2676,10 @@ async function volcarFilasSheet(sheetId, tabName, v, cads) {
     c.actuaciones||'', c.infraestructura||'', c.descripcion||'', c.observaciones||''
   ];
   const filas = cads.length ? cads.map(c => fila(c)) : [fila({})];
-  const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(tabName)}:append?valueInputOption=USER_ENTERED`;
+
+  // Usar rango explícito A1 con INSERT_ROWS para garantizar que siempre se añade al final en orden
+  const rango = encodeURIComponent(`${tabName}!A1`);
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${rango}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;
   const res = await fetch(url, {
     method: 'POST',
     headers: { Authorization: `Bearer ${gAccessToken}`, 'Content-Type': 'application/json' },
@@ -2680,8 +2693,35 @@ async function volcarFilasSheet(sheetId, tabName, v, cads) {
 }
 
 // ══════════════════════════════════════════════
-// UTILIDADES
+// GENERAR CSV DE UNA VISITA
 // ══════════════════════════════════════════════
+function generarCSVVisita(vis) {
+  const v = vis.visita || {};
+  const cads = vis.cadaveres || [];
+  const pInfo = PARQUES[v.parque] || {};
+  const cols = ['Parque','Municipio','Mes','Frecuencia','Periodo','Fecha','Hora_Inicio','Hora_Fin','Observador',
+    'Temperatura','Visibilidad','Viento_Dir','Viento_Vel','Precipitacion','Nubosidad',
+    'Nº_Ref','Especie','Nombre_Cientifico','Sexo','Edad','Tamaño',
+    'Aerogenerador','Subparque','Habitat','Estado_Cadaver','Estado_Descomposicion',
+    'UTM_X','UTM_Y','Lat_WGS84','Lon_WGS84',
+    'Distancia','Direccion_Aero','Diagnostico','Tiempo_Muerte',
+    'Actuaciones','Infraestructura','Descripcion','Observaciones'];
+  const fila = (c) => [
+    pInfo.nombre||v.parque, v.municipio, v.mes||'', v.frecuencia||'', v.periodo||'',
+    v.fecha, v.hora_inicio||'', v.hora_fin||'', v.observador||'',
+    v.temperatura||'', v.visibilidad||'', v.viento_dir||'', v.viento_vel||'', v.precipitacion||'', v.nubosidad||'',
+    c.referencia||'', c.especie_comun||'', c.especie_cientifico||'', c.sexo||'', c.edad||'', c.tamano||'',
+    c.aerogenerador||'', c.subparque_cad||'', c.habitat||'', c.estado_cadaver||'', c.estado_descomposicion||'',
+    c.utmX||'', c.utmY||'', c.lat||'', c.lon||'',
+    c.distancia||'', c.direccion_aero||'', c.diagnostico||'', c.tiempo_muerte||'',
+    c.actuaciones||'', c.infraestructura||'', c.descripcion||'', c.observaciones||''
+  ];
+  const filas = cads.length ? cads.map(c => fila(c)) : [fila({})];
+  return '\uFEFF' + [cols, ...filas]
+    .map(r => r.map(x => `"${(x||'').toString().replace(/"/g,'""')}"`).join(';'))
+    .join('\r\n');
+}
+
 // ══════════════════════════════════════════════
 // UTILIDADES (fmtFecha, toast)
 // ══════════════════════════════════════════════

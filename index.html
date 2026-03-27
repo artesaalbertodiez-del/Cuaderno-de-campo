@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Cuaderno de Campo — ENGIE v21</title>
+<title>Cuaderno de Campo — ENGIE v22</title>
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBnmL9E_YOvPD-4N_jvsqPrl1VlBcuErO8"></script>
 <script src="https://unpkg.com/docx@7.8.2/build/index.js"></script>
 <style>
@@ -2547,7 +2547,9 @@ async function generarDocx(v, cads) {
       new TableRow({children:[celdaCab('Datos generales',5,CW)]}),
       new TableRow({children:[
         new TableCell({columnSpan:2,width:{size:WC*2,type:WidthType.DXA},borders:bs(),margins:marg,children:[par([run('Visita correspondiente al mes de ',{bold:true}),run(v.periodo||'—')])]}),
-        celdaVal(fmtFecha(v.fecha),WC), celdaVal(v.hora_inicio||'—',WC), celdaVal(v.hora_fin||'—',WC),
+        new TableCell({width:{size:WC,type:WidthType.DXA},borders:bs(),margins:marg,children:[par([run('Fecha',{bold:true})]),par([run(fmtFecha(v.fecha))])]}),
+        new TableCell({width:{size:WC,type:WidthType.DXA},borders:bs(),margins:marg,children:[par([run('Hora inicio',{bold:true})]),par([run(v.hora_inicio||'—')])]}),
+        new TableCell({width:{size:WC,type:WidthType.DXA},borders:bs(),margins:marg,children:[par([run('Hora fin',{bold:true})]),par([run(v.hora_fin||'—')])]}),
       ]}),
       new TableRow({children:[new TableCell({columnSpan:5,width:{size:CW,type:WidthType.DXA},borders:bs(),margins:marg,children:[par([run('Observador: ',{bold:true}),run(v.observador||'—')])]})]}),
     ]
@@ -2599,13 +2601,14 @@ async function generarDocx(v, cads) {
 
     // Datos generales
     const W14=Math.floor(CW*0.14),W36=Math.floor(CW*0.36),W20=Math.floor(CW*0.20),W30=CW-W14-W36-W20;
+    const tiempoStr = c.tiempo_muerte ? `${c.tiempo_muerte} días` : '—';
     fichasRestos.push(new Table({
       width:{size:CW,type:WidthType.DXA}, columnWidths:[W14,W36,W20,W30],
       rows:[
         new TableRow({children:[celdaCab('Datos generales',4,CW)]}),
         new TableRow({children:[celdaLb('Parque',W14),celdaVal(pNombre,W36),celdaLb('Término municipal',W20),celdaVal(municipio,W30)]}),
         new TableRow({children:[celdaLb('Fecha',W14),celdaVal(fmtFecha(v.fecha),W36),celdaLb('Hora',W20),celdaVal(c.hora||'—',W30)]}),
-        new TableRow({children:[new TableCell({columnSpan:2,width:{size:W14+W36,type:WidthType.DXA},borders:bs(),margins:marg,children:[par([run('Tiempo estimado desde la muerte',{bold:true})])]}),new TableCell({columnSpan:2,width:{size:W20+W30,type:WidthType.DXA},borders:bs(),margins:marg,children:[par([run(c.tiempo_muerte||'—')])]})]})
+        new TableRow({children:[new TableCell({columnSpan:2,width:{size:W14+W36,type:WidthType.DXA},borders:bs(),margins:marg,children:[par([run('Tiempo estimado desde la muerte',{bold:true})])]}),new TableCell({columnSpan:2,width:{size:W20+W30,type:WidthType.DXA},borders:bs(),margins:marg,children:[par([run(tiempoStr)])]})]})
       ]
     }));
     fichasRestos.push(espacio(120));
@@ -2622,36 +2625,36 @@ async function generarDocx(v, cads) {
     }));
     fichasRestos.push(espacio(120));
 
-    // Localización
+    // Localización — UTM con X e Y en filas separadas, distancia con "metros"
     const WL1=Math.floor(CW*0.20),WL2=Math.floor(CW*0.24),WL3=Math.floor(CW*0.28),WL4=CW-WL1-WL2-WL3;
+    const distStr = c.distancia ? `${c.distancia} metros` : '—';
     fichasRestos.push(new Table({
       width:{size:CW,type:WidthType.DXA}, columnWidths:[WL1,WL2,WL3,WL4],
       rows:[
         new TableRow({children:[celdaCab('Localización',4,CW)]}),
         new TableRow({children:[celdaLb('Nº de aerogenerador',WL1),celdaVal(c.aerogenerador||'—',WL2),celdaLb('Hábitat',WL3),celdaVal(c.habitat||'—',WL4)]}),
-        new TableRow({children:[celdaLb('Coord. UTM ETRS89',WL1),new TableCell({width:{size:WL2,type:WidthType.DXA},borders:bs(),margins:marg,children:[par([run(`X  ${c.utmX||'—'}   Y  ${c.utmY||'—'}`)])]}),celdaLb('Distancia aerogenerador',WL3),celdaVal(c.distancia||'—',WL4)]}),
+        new TableRow({children:[
+          celdaLb('Coord. UTM ETRS89',WL1),
+          new TableCell({width:{size:WL2,type:WidthType.DXA},borders:bs(),margins:marg,children:[
+            par([run(`X  ${c.utmX||'—'}`)]),
+            par([run(`Y  ${c.utmY||'—'}`)]),
+          ]}),
+          celdaLb('Distancia\naerogenera\ndor',WL3),
+          celdaVal(distStr,WL4),
+        ]}),
         new TableRow({children:[celdaLb('Diagnóstico mortandad',WL1),new TableCell({columnSpan:3,width:{size:WL2+WL3+WL4,type:WidthType.DXA},borders:bs(),margins:marg,children:[par([run(c.diagnostico||'—')])]})]})  ,
         new TableRow({children:[celdaLb('Observaciones',WL1),new TableCell({columnSpan:3,width:{size:WL2+WL3+WL4,type:WidthType.DXA},borders:bs(),margins:marg,children:[par([run(c.observaciones||'—')])]})]})
       ]
     }));
-    fichasRestos.push(espacio(160));
+    fichasRestos.push(espacio(120));
 
-    // Mapa + Descripción lado a lado
-    const WMAPA=Math.floor(CW*0.50)-40, WDESC=CW-WMAPA-40;
+    // Descripción de los restos — ancho completo (sin mapa)
     fichasRestos.push(new Table({
-      width:{size:CW,type:WidthType.DXA}, columnWidths:[WMAPA,WDESC],
-      borders:{top:{style:BorderStyle.NONE},bottom:{style:BorderStyle.NONE},left:{style:BorderStyle.NONE},right:{style:BorderStyle.NONE},insideH:{style:BorderStyle.NONE},insideV:{style:BorderStyle.NONE}},
-      rows:[new TableRow({children:[
-        new TableCell({width:{size:WMAPA,type:WidthType.DXA},borders:bs(),shading:{fill:'C8D8C0',type:ShadingType.CLEAR},margins:{top:600,bottom:600,left:80,right:80},
-          children:[par([run('[ Mapa satélite ]',{italic:true,color:'444444',size:18})],{align:AlignmentType.CENTER}),par([run(`UTM X: ${c.utmX||'—'}  Y: ${c.utmY||'—'}`,{size:16,color:'666666'})],{align:AlignmentType.CENTER})]}),
-        new TableCell({width:{size:WDESC,type:WidthType.DXA},borders:{top:{style:BorderStyle.NONE},bottom:{style:BorderStyle.NONE},left:{style:BorderStyle.NONE},right:{style:BorderStyle.NONE}},margins:{top:0,bottom:0,left:40,right:0},
-          children:[
-            new Table({width:{size:WDESC-40,type:WidthType.DXA},columnWidths:[WDESC-40],rows:[
-              new TableRow({children:[new TableCell({width:{size:WDESC-40,type:WidthType.DXA},borders:{top:b(),bottom:b(BD),left:b(),right:b()},shading:{fill:GREY,type:ShadingType.CLEAR},margins:marg,children:[par([run('Descripción de los restos',{bold:true})])]})]}) ,
-              new TableRow({children:[new TableCell({width:{size:WDESC-40,type:WidthType.DXA},borders:{top:{style:BorderStyle.NONE},bottom:b(),left:b(),right:b()},margins:{top:80,bottom:80,left:80,right:80},children:[par([run(c.descripcion||'—')])]})]}),
-            ]})
-          ]})
-      ]})]
+      width:{size:CW,type:WidthType.DXA}, columnWidths:[CW],
+      rows:[
+        new TableRow({children:[new TableCell({width:{size:CW,type:WidthType.DXA},borders:bsCab(),shading:{fill:GREY,type:ShadingType.CLEAR},margins:marg,children:[par([run('Descripción de los restos',{bold:true})])]})]}),
+        new TableRow({children:[new TableCell({width:{size:CW,type:WidthType.DXA},borders:bs(),margins:{top:80,bottom:160,left:80,right:80},children:[par([run(c.descripcion||'')])]})]}),
+      ]
     }));
     fichasRestos.push(espacio(120));
 

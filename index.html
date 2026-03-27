@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Cuaderno de Campo — ENGIE v19</title>
+<title>Cuaderno de Campo — ENGIE v20</title>
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBnmL9E_YOvPD-4N_jvsqPrl1VlBcuErO8"></script>
 <script src="https://unpkg.com/docx@7.8.2/build/index.js"></script>
 <style>
@@ -2297,11 +2297,23 @@ async function subirVisita(id) {
   // ── 1. DOCX a Drive ──
   toast('Generando documento .docx…');
   try {
+    // Diagnóstico: verificar estado de window.docx
+    const docxStatus = typeof window.docx;
+    const docxKeys = window.docx ? Object.keys(window.docx).slice(0,5).join(',') : 'N/A';
+    console.log('window.docx type:', docxStatus, 'keys:', docxKeys);
+    if (!window.docx || !window.docx.Document) {
+      throw new Error(`Librería docx no disponible (type=${docxStatus}, keys=${docxKeys}). Recarga la página e inténtalo de nuevo.`);
+    }
     const docxBlob = await generarDocx(vis.visita || {}, vis.cadaveres || []);
     const nombreFichero = `Ficha_${vis.visita?.parque||'parque'}_${vis.visita?.fecha||'fecha'}.docx`;
     await subirArchivoDrive(docxBlob, nombreFichero, carpetaRaiz, subCarpeta);
     driveOk = true;
-  } catch(e) { errMsg += `Docx: ${e.message}. `; }
+  } catch(e) {
+    console.error('Docx error:', e);
+    errMsg += `Docx: ${e.message}. `;
+    // Mostrar error inmediatamente en pantalla
+    mostrarErrorSync(`❌ Error generando .docx: <strong>${e.message}</strong>`);
+  }
 
   // ── 2. FOTOS a Drive ──
   toast('Subiendo fotos…');
@@ -2460,7 +2472,7 @@ function mostrarErrorSync(html) {
   div.style.cssText = 'background:#ffebee;border:1px solid #ef9a9a;border-radius:8px;padding:12px 14px;margin-bottom:12px;font-size:13px;color:#c62828';
   div.innerHTML = html;
   cont.insertBefore(div, cont.firstChild);
-  setTimeout(() => div.remove(), 10000);
+  setTimeout(() => div.remove(), 30000);
 }
 
 async function subirTodasPendientes() {

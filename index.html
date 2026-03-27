@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Cuaderno de Campo — ENGIE v18</title>
+<title>Cuaderno de Campo — ENGIE v19</title>
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBnmL9E_YOvPD-4N_jvsqPrl1VlBcuErO8"></script>
-<script src="https://unpkg.com/docx@8.5.0/build/index.js"></script>
+<script src="https://unpkg.com/docx@7.8.2/build/index.js"></script>
 <style>
 :root {
   --verde: #2e7d32;
@@ -1615,6 +1615,7 @@ function cerrarVisita() {
       // Sin cambios — mantener subida = true
     } else {
       lista[idx].subida = false;
+      lista[idx].sheetVolcado = false; // Hay cambios — permitir re-volcar al Sheet
     }
     setVisitas(lista);
   }
@@ -2309,27 +2310,26 @@ async function subirVisita(id) {
     fotosOk = true;
   } catch(e) { errMsg += `Fotos: ${e.message}. `; }
 
-  // ── 3. SHEETS ──
+  // ── 3. SHEETS —— solo si no se ha volcado antes ──
   if (aj.sheetId) {
-    toast('Volcando datos a Sheets…');
-    try {
-      await asegurarCabecerasSheet(aj.sheetId, aj.sheetTab || 'Mortandad');
-      await volcarFilasSheet(aj.sheetId, aj.sheetTab || 'Mortandad', vis.visita || {}, vis.cadaveres || []);
+    if (vis.sheetVolcado) {
+      // Ya volcado anteriormente — omitir para evitar duplicados
       sheetsOk = true;
-    } catch(e) { errMsg += `Sheets: ${e.message}. `; }
+    } else {
+      toast('Volcando datos a Sheets…');
+      try {
+        await asegurarCabecerasSheet(aj.sheetId, aj.sheetTab || 'Mortandad');
+        await volcarFilasSheet(aj.sheetId, aj.sheetTab || 'Mortandad', vis.visita || {}, vis.cadaveres || []);
+        // Marcar que ya fue volcado al Sheet
+        let listaTemp = getVisitas();
+        const idxTemp = listaTemp.findIndex(vv => vv.id === id);
+        if (idxTemp >= 0) { listaTemp[idxTemp].sheetVolcado = true; setVisitas(listaTemp); }
+        sheetsOk = true;
+      } catch(e) { errMsg += `Sheets: ${e.message}. `; }
+    }
   } else {
     sheetsOk = true;
   }
-
-  // ── 4. CSV a Drive ──
-  toast('Subiendo CSV a Drive…');
-  try {
-    const csvContenido = generarCSVVisita(vis);
-    const encoder = new TextEncoder();
-    const csvBlob = new Blob([encoder.encode(csvContenido)], { type: 'text/csv;charset=utf-8' });
-    const csvNombre = `Datos_${vis.visita?.parque||'parque'}_${vis.visita?.fecha||'fecha'}.csv`;
-    await subirArchivoDrive(csvBlob, csvNombre, carpetaRaiz, subCarpeta);
-  } catch(e) { errMsg += `CSV: ${e.message}. `; }
 
   // ── Resultado ──
   const todoOk = driveOk && sheetsOk;
@@ -2469,10 +2469,13 @@ async function subirTodasPendientes() {
 }
 
 async function generarDocx(v, cads) {
+  // Verificar que la librería docx está cargada
+  const docxLib = window.docx;
+  if (!docxLib) throw new Error('Librería docx no cargada. Verifica conexión a internet.');
   const {
     Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
     AlignmentType, BorderStyle, WidthType, ShadingType, PageBreak, ImageRun
-  } = docx;
+  } = docxLib;
 
   const pInfo = PARQUES[v.parque] || {};
   const pNombre = pInfo.nombre || v.parque || '—';

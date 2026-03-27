@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Cuaderno de Campo — ENGIE v22</title>
+<title>Cuaderno de Campo — ENGIE v23</title>
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBnmL9E_YOvPD-4N_jvsqPrl1VlBcuErO8"></script>
 <script src="https://unpkg.com/docx@7.8.2/build/index.js"></script>
 <style>
@@ -2561,10 +2561,10 @@ async function generarDocx(v, cads) {
     rows:[
       new TableRow({children:[celdaCab('Tiempo atmosférico',6,CW)]}),
       new TableRow({children:[
-        new TableCell({width:{size:WA,type:WidthType.DXA},borders:bs(),margins:marg,children:[par([run('Temperatura (1)',{bold:true})]),par([run(v.temperatura||'—')])]}),
+        new TableCell({width:{size:WA,type:WidthType.DXA},borders:bs(),margins:marg,children:[par([run('Temperatura',{bold:true}),run(' (1)',{bold:false,size:15})]),par([run(v.temperatura||'—')])]}),
         new TableCell({width:{size:WA,type:WidthType.DXA},borders:bs(),margins:marg,children:[par([run('Visibilidad',{bold:true})]),par([run(v.visibilidad||'—')])]}),
         new TableCell({width:{size:WA,type:WidthType.DXA},borders:bs(),margins:marg,children:[par([run('Dir. viento',{bold:true})]),par([run(v.viento_dir||'—')])]}),
-        new TableCell({width:{size:WA,type:WidthType.DXA},borders:bs(),margins:marg,children:[par([run('Velocidad (2)',{bold:true})]),par([run(v.viento_vel||'—')])]}),
+        new TableCell({width:{size:WA,type:WidthType.DXA},borders:bs(),margins:marg,children:[par([run('Velocidad',{bold:true}),run(' (2)',{bold:false,size:15})]),par([run(v.viento_vel||'—')])]}),
         new TableCell({width:{size:WA,type:WidthType.DXA},borders:bs(),margins:marg,children:[par([run('Precipitación',{bold:true})]),par([run(v.precipitacion||'—')])]}),
         new TableCell({width:{size:WA,type:WidthType.DXA},borders:bs(),margins:marg,children:[par([run('Nubosidad',{bold:true})]),par([run(v.nubosidad||'—')])]}),
       ]}),
@@ -2586,7 +2586,7 @@ async function generarDocx(v, cads) {
     rows:[new TableRow({children:[celdaCab('Nº Ref',1,WI[0]),celdaCab('Especie',1,WI[1]),celdaCab('Nº aerogenerador',1,WI[2]),celdaCab('Observaciones',1,WI[3])]}), ...invRows]
   });
 
-  const piePar = new Paragraph({spacing:{before:200,after:0},border:{top:{style:BorderStyle.SINGLE,size:4,color:'CCCCCC'}},children:[
+  const piePar = new Paragraph({spacing:{before:4000,after:0},border:{top:{style:BorderStyle.SINGLE,size:4,color:'CCCCCC'}},children:[
     run('(1) Temperatura: mucho calor (+30°) · calor (25-29°) · buena (18-24°) · fresca (12-17°) · frío (5-11°) · muy frío (-5°)',{size:15,color:'444444'}),
     new TextRun({text:'',break:1}),
     run('(2) Velocidad: nula · brisa · viento medio · viento fuerte · viento muy fuerte',{size:15,color:'444444'}),
@@ -2614,7 +2614,7 @@ async function generarDocx(v, cads) {
     fichasRestos.push(espacio(120));
 
     // Datos especie
-    const W22=Math.floor(CW*0.22),W28=Math.floor(CW*0.28),W24=Math.floor(CW*0.24),W26=CW-W22-W28-W24;
+    const W22=Math.floor(CW*0.20),W28=Math.floor(CW*0.36),W24=Math.floor(CW*0.16),W26=CW-W22-W28-W24;
     fichasRestos.push(new Table({
       width:{size:CW,type:WidthType.DXA}, columnWidths:[W22,W28,W24,W26],
       rows:[
@@ -2639,7 +2639,7 @@ async function generarDocx(v, cads) {
             par([run(`X  ${c.utmX||'—'}`)]),
             par([run(`Y  ${c.utmY||'—'}`)]),
           ]}),
-          celdaLb('Distancia\naerogenera\ndor',WL3),
+          celdaLb('Distancia aerogenerador',WL3),
           celdaVal(distStr,WL4),
         ]}),
         new TableRow({children:[celdaLb('Diagnóstico mortandad',WL1),new TableCell({columnSpan:3,width:{size:WL2+WL3+WL4,type:WidthType.DXA},borders:bs(),margins:marg,children:[par([run(c.diagnostico||'—')])]})]})  ,
@@ -2667,7 +2667,7 @@ async function generarDocx(v, cads) {
         const byteArr = new Uint8Array(byteChars.length);
         for (let i=0; i<byteChars.length; i++) byteArr[i]=byteChars.charCodeAt(i);
         return new TableCell({width:{size:Math.floor(CW/2),type:WidthType.DXA},borders:bs(),margins:{top:60,bottom:60,left:60,right:60},
-          children:[par([new ImageRun({data:byteArr,transformation:{width:220,height:165},type:'jpg'})],{align:AlignmentType.CENTER})]});
+          children:[par([new ImageRun({data:byteArr,transformation:{width:221,height:166},type:'jpg'})],{align:AlignmentType.CENTER})]});
       } catch(e) {
         return new TableCell({width:{size:Math.floor(CW/2),type:WidthType.DXA},borders:bs(),margins:marg,children:[par([run('[foto no disponible]',{italic:true,color:'888888'})])]});
       }

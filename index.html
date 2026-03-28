@@ -521,8 +521,24 @@ input[type="file"] { display: none; }
 <div class="barra">
   <button class="btn-v" onclick="guardar()">💾 Guardar</button>
   <button class="btn-g" style="background:#fff3e0;color:#e65100;border:1px solid #ffccbc" onclick="cerrarVisita()">✅ Cerrar visita</button>
+  <button class="btn-a btn-sm" onclick="previsualizarActual()">👁 Previsualizar</button>
   <button class="btn-g" onclick="limpiar()" style="margin-left:auto">🗑</button>
 </div>
+</div>
+
+<!-- PREVISUALIZACIÓN -->
+<div id="preview-modal" style="display:none;position:fixed;inset:0;z-index:600;background:rgba(0,0,0,0.7);overflow-y:auto;">
+  <div style="max-width:720px;margin:20px auto;background:white;border-radius:10px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.3);">
+    <div style="background:var(--verde);color:white;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10;">
+      <span style="font-weight:600;font-size:14px">👁 Previsualización — Ficha de campo</span>
+      <div style="display:flex;gap:8px;">
+        <button class="btn-v btn-sm" id="preview-btn-sync" onclick="sincronizarDesdePreview()" style="display:none">☁ Sincronizar</button>
+        <button class="btn-a btn-sm" id="preview-btn-pdf" onclick="exportarPDFDesdePreview()">📄 PDF</button>
+        <button onclick="cerrarPreview()" style="background:rgba(255,255,255,0.2);color:white;border:1px solid rgba(255,255,255,0.4);border-radius:6px;padding:6px 12px;font-size:13px;cursor:pointer">✕ Cerrar</button>
+      </div>
+    </div>
+    <div id="preview-content" style="padding:20px;font-family:Arial,sans-serif;font-size:9.5pt;color:#000;"></div>
+  </div>
 </div>
 
 <!-- CÁMARA -->
@@ -1712,8 +1728,7 @@ function renderHistorial() {
         </table>` : '<p style="padding:6px 0;font-style:italic">Sin cadáveres registrados</p>'}
         <div class="vc-acciones">
           ${esBorador ? `<button class="btn-v btn-sm" onclick="editarVisita('${v.id}')">✏️ Editar</button>` : `<button class="btn-g btn-sm" onclick="reabrirVisita('${v.id}')">🔓 Reabrir</button>`}
-          <button class="btn-a btn-sm" onclick="exportWordHistorial('${v.id}')">📄 PDF</button>
-          <button class="btn-n btn-sm" onclick="exportExcelHistorial('${v.id}')">📊 Excel</button>
+          <button class="btn-a btn-sm" onclick="previsualizarVisita('${v.id}')">👁 Previsualizar</button>
           <button class="btn-r btn-sm" onclick="eliminarVisita('${v.id}')">🗑 Eliminar</button>
         </div>
       </div>
@@ -2929,8 +2944,245 @@ function generarCSVVisita(vis) {
 }
 
 // ══════════════════════════════════════════════
-// UTILIDADES (fmtFecha, toast)
+// PREVISUALIZACIÓN
 // ══════════════════════════════════════════════
+let previewVisitaId = null; // id de la visita que se está previsualizando (null = formulario activo)
+
+function previsualizarActual() {
+  guardarTodos();
+  guardarVisitaActual();
+  previewVisitaId = null;
+  _abrirPreview(getDatosVisita(), cadaveres, false);
+}
+
+function previsualizarVisita(id) {
+  const vis = getVisitas().find(v => v.id === id);
+  if (!vis) return;
+  previewVisitaId = id;
+  const puedeSync = vis.estado === 'cerrada' && !vis.subida;
+  _abrirPreview(vis.visita || {}, vis.cadaveres || [], puedeSync);
+}
+
+function _abrirPreview(v, cads, mostrarSync) {
+  const modal = document.getElementById('preview-modal');
+  const content = document.getElementById('preview-content');
+  const btnSync = document.getElementById('preview-btn-sync');
+
+  btnSync.style.display = (mostrarSync && gAccessToken) ? 'inline-flex' : 'none';
+
+  content.innerHTML = _generarHTMLPreview(v, cads);
+  modal.style.display = 'block';
+  document.body.style.overflow = 'hidden';
+}
+
+function cerrarPreview() {
+  document.getElementById('preview-modal').style.display = 'none';
+  document.body.style.overflow = '';
+  previewVisitaId = null;
+}
+
+function exportarPDFDesdePreview() {
+  // Reutiliza la lógica existente de exportWord según contexto
+  if (previewVisitaId) {
+    exportWordHistorial(previewVisitaId);
+  } else {
+    exportWord();
+  }
+}
+
+function sincronizarDesdePreview() {
+  if (!previewVisitaId) return;
+  cerrarPreview();
+  abrirSync();
+  setTimeout(() => subirVisita(previewVisitaId), 300);
+}
+
+function _generarHTMLPreview(v, cads) {
+  const pInfo = PARQUES[v.parque] || {};
+  const pNombre = pInfo.nombre || v.parque || '—';
+  const pNombreMayus = pNombre.toUpperCase().replace('PARQUE EÓLICO','PARQUE EOLICO');
+  const municipio = v.municipio || pInfo.municipio || '—';
+  const provincia = pInfo.provincia || '—';
+  const municipioMayus = municipio.toUpperCase();
+  const provinciaMayus = provincia.toUpperCase();
+  const periodoStr = v.periodo || '—';
+
+  const css = `
+    <style>
+    .pv-wrap { font-family: Arial, sans-serif; font-size: 9.5pt; color: #000; }
+    .pv-wrap table { border-collapse: collapse; width: 100%; font-size: 9pt; margin-bottom: 12px; }
+    .pv-wrap td { padding: 4px 7px; border: 1px solid #aaa; vertical-align: top; line-height: 1.4; }
+    .pv-wrap .sg td { background: #e8f0e9; font-weight: bold; border: 1px solid #888; }
+    .pv-wrap .lb { font-weight: bold; }
+    .pv-wrap em { font-style: italic; }
+    .pv-wrap .cab-tbl { border-collapse: collapse; width: 100%; margin-bottom: 14px; }
+    .pv-wrap .cab-tbl td { border: none; padding: 0; }
+    .pv-wrap .cab-ico { width: 48px; height: 48px; background: #4A7C59; display: block; }
+    .pv-wrap .cab-tipo { font-size: 13.5pt; font-weight: bold; display: block; line-height: 1.2; }
+    .pv-wrap .cab-sub { font-size: 9pt; display: block; line-height: 1.5; color: #333; }
+    .pv-wrap .cab-line { border-bottom: 2px solid #4A7C59; padding-bottom: 6px; }
+    .pv-wrap .inv-vacio td { font-style: italic; color: #666; }
+    .pv-wrap .pb-section { border-top: 2px dashed #ccc; margin: 20px 0 16px; padding-top: 4px; }
+    .pv-wrap .pie { font-size: 7.5pt; color: #444; line-height: 1.7; border-top: 1px solid #ccc; padding-top: 8px; margin-top: 12px; }
+    .pv-wrap .mapa-box { background: #c8d8c0; border: 1px solid #aaa; height: 140px; display: flex; align-items: center; justify-content: center; font-size: 8pt; color: #555; margin-bottom: 8px; border-radius: 4px; }
+    .pv-wrap .mapa-img { width: 100%; max-height: 200px; object-fit: cover; border: 1px solid #aaa; border-radius: 4px; margin-bottom: 8px; }
+    .pv-wrap .fotos-row td { border: 1px solid #aaa; padding: 6px; text-align: center; }
+    .pv-wrap .fotos-row img { max-width: 100%; max-height: 180px; display: block; margin: 0 auto; }
+    </style>`;
+
+  const cabHtml = (tipo) => `
+<table class="cab-tbl">
+<tr>
+  <td style="width:54px;vertical-align:top;padding-right:12px;">
+    <span class="cab-ico"></span>
+  </td>
+  <td class="cab-line" style="vertical-align:top;padding-bottom:6px;">
+    <span class="cab-tipo">${tipo}</span>
+    <span class="cab-sub">SEGUIMIENTO AMBIENTAL ${pNombreMayus}</span>
+    <span class="cab-sub">TÉRMINO MUNICIPAL DE ${municipioMayus} (${provinciaMayus})</span>
+  </td>
+</tr>
+</table>`;
+
+  // ── Inventario ──
+  const invRows = cads.length
+    ? cads.map(c => `<tr>
+        <td>${c.referencia||''}</td>
+        <td>${c.especie_comun||''}${c.especie_cientifico?` (<em>${c.especie_cientifico}</em>)`:''}</td>
+        <td>${c.aerogenerador||''}</td>
+        <td>${c.observaciones||''}</td>
+      </tr>`).join('')
+    : `<tr class="inv-vacio"><td colspan="4" style="text-align:center;padding:8px">No se han encontrado restos</td></tr>`;
+
+  let html = `<div class="pv-wrap">${css}
+${cabHtml('FICHA DE CAMPO')}
+
+<table>
+<tr class="sg"><td colspan="5">Datos generales</td></tr>
+<tr>
+  <td colspan="2"><span class="lb">Visita correspondiente al mes de</span> ${periodoStr}</td>
+  <td><span class="lb">Fecha</span> ${fmtFecha(v.fecha)}</td>
+  <td><span class="lb">Hora inicio</span> ${v.hora_inicio||'—'}</td>
+  <td><span class="lb">Hora fin</span> ${v.hora_fin||'—'}</td>
+</tr>
+<tr><td colspan="5"><span class="lb">Observador</span> ${v.observador||'—'}</td></tr>
+</table>
+
+<table>
+<tr class="sg"><td colspan="6">Tiempo atmosférico</td></tr>
+<tr>
+  <td><span class="lb">Temperatura</span><br>${v.temperatura||'—'}</td>
+  <td><span class="lb">Visibilidad</span><br>${v.visibilidad||'—'}</td>
+  <td><span class="lb">Dir. viento</span><br>${v.viento_dir||'—'}</td>
+  <td><span class="lb">Velocidad</span><br>${v.viento_vel||'—'}</td>
+  <td><span class="lb">Precipitación</span><br>${v.precipitacion||'—'}</td>
+  <td><span class="lb">Nubosidad</span><br>${v.nubosidad||'—'}</td>
+</tr>
+</table>
+
+<p style="font-size:9.5pt;font-weight:bold;text-transform:uppercase;margin:0 0 4px">Inventario de restos</p>
+<table>
+<tr class="sg"><td style="width:15%">Nº Ref</td><td style="width:38%">Especie</td><td style="width:13%">Nº aerogenerador</td><td>Observaciones</td></tr>
+${invRows}
+</table>
+
+<p class="pie">
+(1) Temperatura: mucho calor (+30°) · calor (25-29°) · buena (18-24°) · fresca (12-17°) · frío (5-11°) · muy frío (&lt;0°C)<br>
+(2) Velocidad: nula · brisa · viento medio · viento fuerte · viento muy fuerte
+</p>`;
+
+  // ── Fichas de restos ──
+  for (const c of cads) {
+    const mapaUrl = (c.lat && c.lon)
+      ? `https://maps.googleapis.com/maps/api/staticmap?center=${c.lat},${c.lon}&zoom=17&size=480x320&maptype=satellite&markers=color:red%7C${c.lat},${c.lon}&key=${GMAPS_STATIC_KEY}`
+      : null;
+
+    const fotosList = (c.fotos||[]).slice(0,2);
+    const fotosHtml = fotosList.length ? `
+<table><tr class="sg"><td colspan="2" style="text-align:center">Fotografías</td></tr>
+<tr class="fotos-row">
+  ${fotosList.map(f => `<td style="width:50%"><img src="${f}"></td>`).join('')}
+  ${fotosList.length < 2 ? '<td style="width:50%"></td>' : ''}
+</tr></table>` : '';
+
+    html += `
+<div class="pb-section">
+  <p style="font-size:8pt;color:#888;margin:0 0 12px">— Ficha de restos —</p>
+</div>
+${cabHtml('FICHA DE RESTOS')}
+
+<table>
+<tr class="sg"><td colspan="4">Datos generales</td></tr>
+<tr>
+  <td style="width:18%" class="lb">Parque</td><td style="width:32%">${pNombre}</td>
+  <td class="lb">Término municipal</td><td>${municipio}</td>
+</tr>
+<tr>
+  <td class="lb">Fecha</td><td>${fmtFecha(v.fecha)}</td>
+  <td class="lb">Hora</td><td>${c.hora||'—'}</td>
+</tr>
+<tr>
+  <td colspan="2" class="lb">Tiempo estimado desde la muerte</td>
+  <td colspan="2">${c.tiempo_muerte||'—'}</td>
+</tr>
+</table>
+
+<table>
+<tr class="sg"><td colspan="4">Datos de la especie</td></tr>
+<tr>
+  <td style="width:22%" class="lb">Nº referencia</td><td style="width:28%">${c.referencia||'—'}</td>
+  <td class="lb">Sexo</td><td>${c.sexo||'—'}</td>
+</tr>
+<tr>
+  <td class="lb">Especie</td>
+  <td>${c.especie_comun||'—'}${c.especie_cientifico?` (<em>${c.especie_cientifico}</em>)`:''}</td>
+  <td class="lb">Edad</td><td>${c.edad||'—'}</td>
+</tr>
+</table>
+
+<table>
+<tr class="sg"><td colspan="4">Localización</td></tr>
+<tr>
+  <td style="width:22%" class="lb">Nº de aerogenerador</td><td style="width:28%">${c.aerogenerador||'—'}</td>
+  <td class="lb">Hábitat</td><td>${c.habitat||'—'}</td>
+</tr>
+<tr>
+  <td class="lb">Coord. UTM ETRS89</td>
+  <td>X &nbsp;${c.utmX||'—'}<br>Y &nbsp;${c.utmY||'—'}</td>
+  <td class="lb">Distancia aerogenerador</td><td>${c.distancia||'—'}</td>
+</tr>
+<tr>
+  <td class="lb">Diagnóstico mortandad</td><td colspan="3">${c.diagnostico||'—'}</td>
+</tr>
+<tr>
+  <td class="lb">Observaciones</td><td colspan="3">${c.observaciones||'—'}</td>
+</tr>
+</table>
+
+<table style="width:100%;border-collapse:collapse;margin-bottom:8px">
+<tr>
+  <td style="width:50%;border:none;vertical-align:top;padding-right:8px">
+    ${mapaUrl
+      ? `<img class="mapa-img" src="${mapaUrl}">`
+      : `<div class="mapa-box">Sin coordenadas GPS</div>`}
+  </td>
+  <td style="width:50%;border:none;vertical-align:top">
+    <table style="height:100%;margin-bottom:0">
+      <tr class="sg"><td>Descripción de los restos</td></tr>
+      <tr><td style="height:120px;vertical-align:top;padding:6px 8px">${c.descripcion||'—'}</td></tr>
+    </table>
+  </td>
+</tr>
+</table>
+
+${fotosHtml}`;
+  }
+
+  html += '</div>';
+  return html;
+}
+
+
 
 function fmtFecha(f) {
   if(!f) return '—';

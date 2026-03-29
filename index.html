@@ -2779,9 +2779,20 @@ async function generarDocx(v, cads) {
   const CD = CW - CA - CB - CC;
 
   const fichasRestos = [];
-  for (const cd of cads) {
+  for (let ci = 0; ci < cads.length; ci++) {
+    const cd = cads[ci];
     const tiempoStr = cd.tiempo_muerte ? `${cd.tiempo_muerte} días` : '—';
     const distStr   = cd.distancia    ? `${cd.distancia} metros`    : '—';
+
+    // Salto de página antes de cada ficha excepto la primera
+    if (ci > 0) {
+      fichasRestos.push(
+        new Paragraph({
+          children: [new PageBreak()],
+          spacing: { before: 0, after: 0 },
+        })
+      );
+    }
 
     fichasRestos.push(
       cabecera('FICHA DE RESTOS'),
@@ -2863,8 +2874,8 @@ async function generarDocx(v, cads) {
         for (let i = 0; i < byteChars.length; i++) byteArr[i] = byteChars.charCodeAt(i);
         return new TableCell({
           width: { size: Math.floor(CW / 2), type: WidthType.DXA }, borders: bs(),
-          margins: { top: 5, bottom: 5, left: 5, right: 5 }, verticalAlign: VerticalAlign.CENTER,
-          children: [par([new ImageRun({ data: byteArr, transformation: { width: 221, height: 166 }, type: 'jpg' })], { align: AlignmentType.CENTER })]
+          margins: { top: 113, bottom: 60, left: 60, right: 60 }, verticalAlign: VerticalAlign.CENTER,
+          children: [par([new ImageRun({ data: byteArr, transformation: { width: 246, height: 184 }, type: 'jpg' })], { align: AlignmentType.CENTER })]
         });
       } catch (e) {
         return new TableCell({
@@ -3039,10 +3050,12 @@ async function volcarFilasSheet(sheetId, tabName, v, cads, visitaId) {
     return nombreParqueOficial[v.parque] || pInfo.nombre || v.parque || '';
   }
 
-  // Subparque: para Guijo el subparque del cadáver, para el resto el nombre del parque
+  // Subparque: para Guijo el subparque del cadáver con P.E., para el resto el nombre del parque
   function subparqueCad(c) {
     if (v.parque === 'GUI') {
-      return c.subparque_cad || '';
+      if (c.subparque_cad === 'Guijo I')  return 'P.E. Guijo I';
+      if (c.subparque_cad === 'Guijo II') return 'P.E. Guijo II';
+      return 'P.E. El Guijo';
     }
     return nombreParqueCad(c);
   }
@@ -3189,6 +3202,12 @@ function _abrirPreview(v, cads, mostrarSync) {
   btnSync.style.display = (mostrarSync && gAccessToken) ? 'inline-flex' : 'none';
 
   content.innerHTML = _generarHTMLPreview(v, cads);
+
+  // Asignar src de mapas después de insertar en DOM (evita bloqueo en Safari iOS)
+  content.querySelectorAll('img[data-mapaurl]').forEach(img => {
+    img.src = img.getAttribute('data-mapaurl');
+    img.removeAttribute('data-mapaurl');
+  });
   modal.style.display = 'block';
   document.body.style.overflow = 'hidden';
 }
@@ -3391,7 +3410,7 @@ ${cabHtml('FICHA DE RESTOS')}
 <tr>
   <td style="width:50%;border:none;vertical-align:top;padding-right:8px">
     ${mapaUrl
-      ? `<img class="mapa-img" src="${mapaUrl}">`
+      ? `<img class="mapa-img" data-mapaurl="${mapaUrl}" style="width:100%;max-height:200px;object-fit:cover;border:1px solid #aaa;border-radius:4px;margin-bottom:8px" alt="Mapa">`
       : `<div class="mapa-box">Sin coordenadas GPS</div>`}
   </td>
   <td style="width:50%;border:none;vertical-align:top">

@@ -1391,7 +1391,7 @@ function renderCadaveres() {
         <div class="subsec">Localización</div>
         <div class="fila f2" style="margin-bottom:8px">
           <div class="campo"><label>Nº de aerogenerador</label>
-            <select data-c="aerogenerador" onchange="actualizarInventario(); _onAeroChange(${cad.id}, this.value)">
+            <select data-c="aerogenerador" onchange="actualizarInventario(); _onAeroChange(${cad.id}, this.value)" oninput="_onAeroChange(${cad.id}, this.value)">
               <option value="">—</option>
               ${(()=>{ const p=document.getElementById('parque')?.value; const sub=document.getElementById('subparque')?.value; const key = p==='GUI'?(sub==='Guijo II'?'GUI-II':'GUI-I'):p; return (AEROGENERADORES[key]||[]).map(n=>`<option value="${n}"${cad.aerogenerador==n?' selected':''}>${n}</option>`).join(''); })()}
             </select>
@@ -1571,8 +1571,11 @@ function obtenerGPS(id) {
     document.getElementById(`utmX-${id}`).value = cad.utmX;
     document.getElementById(`utmY-${id}`).value = cad.utmY;
 
-    // Calcular distancia al aerogenerador automáticamente
-    _actualizarDistancia(id, cad);
+    // Sincronizar todos los campos del DOM antes de calcular (necesario en Safari iOS)
+    guardarCampos(id);
+
+    // Calcular distancia — con pequeño delay para que Safari iOS actualice el DOM
+    setTimeout(() => _actualizarDistancia(id, cad), 100);
 
     // Show map
     const wrap = document.getElementById(`mapa-wrap-${id}`);
@@ -1590,8 +1593,9 @@ function utmManual(id) {
   cad.utmX = x; cad.utmY = y;
   if (!x || !y || isNaN(parseFloat(x)) || isNaN(parseFloat(y))) return;
 
-  // Calcular distancia al aerogenerador automáticamente
-  _actualizarDistancia(id, cad);
+  // Sincronizar campos y calcular con delay para Safari iOS
+  guardarCampos(id);
+  setTimeout(() => _actualizarDistancia(id, cad), 100);
 
   const wrap = document.getElementById(`mapa-wrap-${id}`);
   if (wrap) wrap.style.display = 'block';
@@ -2558,6 +2562,7 @@ async function asegurarCabecerasSheet(sheetId, tabName) {
     'Nº Ref','Especie','Nombre Científico','Sexo','Edad','Tamaño',
     'Aerogenerador','Subparque','Hábitat','Estado Cadáver','Estado Descomposición',
     'Hora','UTM X','UTM Y','Lat WGS84','Lon WGS84',
+    'Sistema referencia',
     'Distancia Aerog.','Dirección Aerog.','Causa Probable','Tiempo Muerte (días)',
     'Fecha aproximada',
     'Actuaciones','Infraestructura','Descripción Restos','Observaciones'
@@ -3034,16 +3039,34 @@ async function volcarFilasSheet(sheetId, tabName, v, cads, visitaId) {
     return nombreParqueOficial[v.parque] || pInfo.nombre || v.parque || '';
   }
 
+  // Subparque: para Guijo el subparque del cadáver, para el resto el nombre del parque
+  function subparqueCad(c) {
+    if (v.parque === 'GUI') {
+      return c.subparque_cad || '';
+    }
+    return nombreParqueCad(c);
+  }
+
+  // Hora como texto forzado (prefijo ' para evitar que Sheets lo interprete como número)
+  function horaTexto(h) {
+    if (!h) return '';
+    // Asegurar formato HH:MM con apóstrofe para forzar texto en Sheets
+    return h;
+  }
+
   const fila = (c) => [
     visitaId || '',
     nombreParqueCad(c),
     v.municipio, anio, mesNum, '', // Frecuencia vacía
-    v.periodo||'', v.fecha, v.hora_inicio||'', v.hora_fin||'', v.observador||'',
+    v.periodo||'', v.fecha,
+    horaTexto(v.hora_inicio), horaTexto(v.hora_fin),
+    v.observador||'',
     v.temperatura||'', v.visibilidad||'', v.viento_dir||'', v.viento_vel||'', v.precipitacion||'', v.nubosidad||'',
     c.referencia||'', c.especie_comun||'', c.especie_cientifico||'', c.sexo||'', c.edad||'', c.tamano||'',
-    c.aerogenerador||'', c.subparque_cad||'', c.habitat||'', c.estado_cadaver||'', c.estado_descomposicion||'',
-    c.hora||'',
+    c.aerogenerador||'', subparqueCad(c), c.habitat||'', c.estado_cadaver||'', c.estado_descomposicion||'',
+    horaTexto(c.hora||''),
     c.utmX||'', c.utmY||'', c.lat||'', c.lon||'',
+    'WGS84',
     c.distancia||'', c.direccion_aero||'', c.diagnostico||'', c.tiempo_muerte||'',
     fechaAproximada(v.fecha, c.tiempo_muerte),
     c.actuaciones||'', c.infraestructura||'', c.descripcion||'', c.observaciones||''
@@ -3095,7 +3118,7 @@ async function volcarFilasSheet(sheetId, tabName, v, cads, visitaId) {
 
   // 4. Añadir las filas nuevas al final
   const rango = encodeURIComponent(`${tabName}!A1`);
-  const urlAppend = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${rango}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;
+  const urlAppend = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${rango}:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS`;
   const res = await fetch(urlAppend, {
     method: 'POST',
     headers: { Authorization: `Bearer ${gAccessToken}`, 'Content-Type': 'application/json' },
@@ -3409,31 +3432,8 @@ try {
   mostrarPantalla('pantalla-inicio');
   const barraEl = document.querySelector('.barra');
   if (barraEl) barraEl.style.display = 'none';
-
-  // Diagnóstico localStorage — visible 6 segundos al arrancar
-  (function() {
-    try {
-      const visitas = JSON.parse(localStorage.getItem('engie_visitas') || '[]');
-      const ajustes = JSON.parse(localStorage.getItem('engie_ajustes') || '{}');
-      const nVisitas = visitas.length;
-      const obs = ajustes.observador || '';
-      const msg = `🗂 localStorage OK · ${nVisitas} visita${nVisitas!==1?'s':''} guardada${nVisitas!==1?'s':''}${obs?' · '+obs:''}`;
-      const d = document.createElement('div');
-      d.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1b5e20;color:white;border-radius:6px;padding:8px 16px;font-size:12px;z-index:9999;white-space:nowrap;opacity:1;transition:opacity 1s';
-      d.textContent = msg;
-      document.body.appendChild(d);
-      setTimeout(() => { d.style.opacity = '0'; setTimeout(() => d.remove(), 1000); }, 5000);
-    } catch(e) {
-      console.warn('Diagnóstico localStorage error:', e);
-    }
-  })();
 } catch(e) {
   console.error('Error en INIT:', e);
-  // Mostrar error visible en pantalla
-  const errDiv = document.createElement('div');
-  errDiv.style.cssText = 'position:fixed;inset:0;background:white;z-index:9999;padding:24px;font-family:monospace;font-size:13px;color:red;';
-  errDiv.innerHTML = '<strong>Error al arrancar la app:</strong><br><br>' + e.message + '<br><br>' + e.stack;
-  document.body.appendChild(errDiv);
 }
 
 // ══════════════════════════════════════════════

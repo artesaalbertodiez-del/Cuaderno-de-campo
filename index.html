@@ -521,6 +521,7 @@ input[type="file"] { display: none; }
 <div class="barra">
   <button class="btn-v" onclick="guardar()">💾 Guardar</button>
   <button class="btn-g" style="background:#fff3e0;color:#e65100;border:1px solid #ffccbc" onclick="cerrarVisita()">✅ Cerrar visita</button>
+  <button class="btn-a btn-sm" onclick="previsualizarActual()">👁 Previsualizar</button>
   <button class="btn-g" onclick="limpiar()" style="margin-left:auto">🗑</button>
 </div>
 </div>
@@ -532,6 +533,7 @@ input[type="file"] { display: none; }
       <span style="font-weight:600;font-size:14px">👁 Previsualización — Ficha de campo</span>
       <div style="display:flex;gap:8px;">
         <button class="btn-v btn-sm" id="preview-btn-sync" onclick="sincronizarDesdePreview()" style="display:none">☁ Sincronizar</button>
+        <button class="btn-a btn-sm" id="preview-btn-pdf" onclick="exportarPDFDesdePreview()">📄 PDF</button>
         <button onclick="cerrarPreview()" style="background:rgba(255,255,255,0.2);color:white;border:1px solid rgba(255,255,255,0.4);border-radius:6px;padding:6px 12px;font-size:13px;cursor:pointer">✕ Cerrar</button>
       </div>
     </div>
@@ -3091,19 +3093,9 @@ ${invRows}
 
   // ── Fichas de restos ──
   for (const c of cads) {
-    const mapaUrl = (() => {
-      let lat = c.lat, lon = c.lon;
-      if ((!lat || !lon) && c.utmX && c.utmY) {
-        const ll = utmToWgs84(parseFloat(c.utmX), parseFloat(c.utmY));
-        if (Number.isFinite(ll.lat) && Number.isFinite(ll.lng)) {
-          lat = ll.lat.toFixed(6);
-          lon = ll.lng.toFixed(6);
-        }
-      }
-      return (lat && lon)
-        ? `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lon}&zoom=17&size=480x320&maptype=satellite&markers=color:red%7C${lat},${lon}&key=${GMAPS_STATIC_KEY}`
-        : null;
-    })();
+    const mapaUrl = (c.lat && c.lon)
+      ? `https://maps.googleapis.com/maps/api/staticmap?center=${c.lat},${c.lon}&zoom=17&size=480x320&maptype=satellite&markers=color:red%7C${c.lat},${c.lon}&key=${GMAPS_STATIC_KEY}`
+      : null;
 
     const fotosList = (c.fotos||[]).slice(0,2);
     const fotosHtml = fotosList.length ? `

@@ -2872,10 +2872,23 @@ async function generarDocx(v, cads) {
         const byteChars = atob(base64);
         const byteArr = new Uint8Array(byteChars.length);
         for (let i = 0; i < byteChars.length; i++) byteArr[i] = byteChars.charCodeAt(i);
+
+        // Leer dimensiones reales de la imagen para calcular ancho proporcional
+        const imgDims = await new Promise((resolve) => {
+          const img = new Image();
+          img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight });
+          img.onerror = () => resolve({ w: 4, h: 3 }); // fallback 4:3
+          img.src = f.includes(',') ? f : `data:image/jpeg;base64,${f}`;
+        });
+
+        // Alto fijo: 6.5cm = ~246px a 96dpi. Ancho proporcional.
+        const targetH = 246;
+        const targetW = Math.round((imgDims.w / imgDims.h) * targetH);
+
         return new TableCell({
           width: { size: Math.floor(CW / 2), type: WidthType.DXA }, borders: bs(),
           margins: { top: 113, bottom: 60, left: 60, right: 60 }, verticalAlign: VerticalAlign.CENTER,
-          children: [par([new ImageRun({ data: byteArr, transformation: { width: 246, height: 184 }, type: 'jpg' })], { align: AlignmentType.CENTER })]
+          children: [par([new ImageRun({ data: byteArr, transformation: { width: targetW, height: targetH }, type: 'jpg' })], { align: AlignmentType.CENTER })]
         });
       } catch (e) {
         return new TableCell({
@@ -3203,10 +3216,22 @@ function _abrirPreview(v, cads, mostrarSync) {
 
   content.innerHTML = _generarHTMLPreview(v, cads);
 
-  // Asignar src de mapas después de insertar en DOM (evita bloqueo en Safari iOS)
-  content.querySelectorAll('img[data-mapaurl]').forEach(img => {
-    img.src = img.getAttribute('data-mapaurl');
+  // Cargar mapas via fetch → base64 para evitar bloqueo de Safari con URLs externas
+  const mapaImgs = content.querySelectorAll('img[data-mapaurl]');
+  mapaImgs.forEach(async (img) => {
+    const url = img.getAttribute('data-mapaurl');
     img.removeAttribute('data-mapaurl');
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('fetch failed');
+      const blob = await res.blob();
+      const reader = new FileReader();
+      reader.onload = () => { img.src = reader.result; };
+      reader.readAsDataURL(blob);
+    } catch(e) {
+      // Si fetch falla, intentar asignar src directamente como fallback
+      img.src = url;
+    }
   });
   modal.style.display = 'block';
   document.body.style.overflow = 'hidden';

@@ -2868,7 +2868,9 @@ async function generarDocx(v, cads) {
     const fotosList = (cd.fotos || []).slice(0, 2);
     const fotosCells = await Promise.all(fotosList.map(async (f) => {
       try {
+        // Separar siempre el base64 puro del prefijo data:
         const base64 = f.includes(',') ? f.split(',')[1] : f;
+        const dataUrl = `data:image/jpeg;base64,${base64}`;
         const byteChars = atob(base64);
         const byteArr = new Uint8Array(byteChars.length);
         for (let i = 0; i < byteChars.length; i++) byteArr[i] = byteChars.charCodeAt(i);
@@ -2878,7 +2880,7 @@ async function generarDocx(v, cads) {
           const img = new Image();
           img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight });
           img.onerror = () => resolve({ w: 4, h: 3 }); // fallback 4:3
-          img.src = f.includes(',') ? f : `data:image/jpeg;base64,${f}`;
+          img.src = dataUrl;
         });
 
         // Alto fijo: 6.5cm = ~246px a 96dpi. Ancho proporcional.
@@ -3216,23 +3218,34 @@ function _abrirPreview(v, cads, mostrarSync) {
 
   content.innerHTML = _generarHTMLPreview(v, cads);
 
-  // Cargar mapas via fetch → base64 para evitar bloqueo de Safari con URLs externas
-  const mapaImgs = content.querySelectorAll('img[data-mapaurl]');
-  mapaImgs.forEach(async (img) => {
-    const url = img.getAttribute('data-mapaurl');
-    img.removeAttribute('data-mapaurl');
-    try {
-      const res = await fetch(url);
-      if (!res.ok) throw new Error('fetch failed');
-      const blob = await res.blob();
-      const reader = new FileReader();
-      reader.onload = () => { img.src = reader.result; };
-      reader.readAsDataURL(blob);
-    } catch(e) {
-      // Si fetch falla, intentar asignar src directamente como fallback
-      img.src = url;
-    }
-  });
+  // Inicializar mapas Google Maps JS en cada div .pv-mapa
+  setTimeout(() => {
+    content.querySelectorAll('.pv-mapa[data-lat]').forEach(div => {
+      const lat = parseFloat(div.getAttribute('data-lat'));
+      const lon = parseFloat(div.getAttribute('data-lon'));
+      if (!isFinite(lat) || !isFinite(lon)) return;
+      try {
+        const map = new google.maps.Map(div, {
+          center: { lat, lng: lon },
+          zoom: 17,
+          mapTypeId: 'satellite',
+          mapTypeControl: false,
+          streetViewControl: false,
+          fullscreenControl: false,
+          zoomControl: false,
+          gestureHandling: 'none',
+        });
+        new google.maps.Marker({ position: { lat, lng: lon }, map });
+      } catch(e) {
+        div.style.background = '#c8d8c0';
+        div.style.display = 'flex';
+        div.style.alignItems = 'center';
+        div.style.justifyContent = 'center';
+        div.textContent = `UTM: ${div.getAttribute('data-lat')}, ${div.getAttribute('data-lon')}`;
+      }
+    });
+  }, 200);
+
   modal.style.display = 'block';
   document.body.style.overflow = 'hidden';
 }
@@ -3355,19 +3368,15 @@ ${invRows}
 
   // ── Fichas de restos ──
   for (const c of cads) {
-    const mapaUrl = (() => {
-      let lat = c.lat, lon = c.lon;
-      if ((!lat || !lon) && c.utmX && c.utmY) {
-        const ll = utmToWgs84(parseFloat(c.utmX), parseFloat(c.utmY));
-        if (Number.isFinite(ll.lat) && Number.isFinite(ll.lng)) {
-          lat = ll.lat.toFixed(6);
-          lon = ll.lng.toFixed(6);
-        }
+    let pvLat = c.lat, pvLon = c.lon;
+    if ((!pvLat || !pvLon) && c.utmX && c.utmY) {
+      const ll = utmToWgs84(parseFloat(c.utmX), parseFloat(c.utmY));
+      if (Number.isFinite(ll.lat) && Number.isFinite(ll.lng)) {
+        pvLat = ll.lat.toFixed(6);
+        pvLon = ll.lng.toFixed(6);
       }
-      return (lat && lon)
-        ? `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lon}&zoom=17&size=480x320&maptype=satellite&markers=color:red%7C${lat},${lon}&key=${GMAPS_STATIC_KEY}`
-        : null;
-    })();
+    }
+    const lat = pvLat, lon = pvLon;
 
     const fotosList = (c.fotos||[]).slice(0,2);
     const fotosHtml = fotosList.length ? `
@@ -3434,8 +3443,8 @@ ${cabHtml('FICHA DE RESTOS')}
 <table style="width:100%;border-collapse:collapse;margin-bottom:8px">
 <tr>
   <td style="width:50%;border:none;vertical-align:top;padding-right:8px">
-    ${mapaUrl
-      ? `<img class="mapa-img" data-mapaurl="${mapaUrl}" style="width:100%;max-height:200px;object-fit:cover;border:1px solid #aaa;border-radius:4px;margin-bottom:8px" alt="Mapa">`
+    ${(lat && lon)
+      ? `<div class="pv-mapa" data-lat="${lat}" data-lon="${lon}" style="width:100%;height:200px;border:1px solid #aaa;border-radius:4px;margin-bottom:8px;background:#e8e8e8"></div>`
       : `<div class="mapa-box">Sin coordenadas GPS</div>`}
   </td>
   <td style="width:50%;border:none;vertical-align:top">

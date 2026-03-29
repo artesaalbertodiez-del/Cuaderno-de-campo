@@ -2433,12 +2433,13 @@ async function asegurarCabecerasSheet(sheetId, tabName) {
   if ((data.values?.[0] || []).length > 0) return;
   const cabeceras = [[
     'ID_Visita',
-    'Parque','Municipio','Mes','Frecuencia','Periodo','Fecha','Hora Inicio','Hora Fin','Observador',
+    'Parque','Municipio','Año','Mes','Frecuencia','Periodo','Fecha','Hora Inicio','Hora Fin','Observador',
     'Temperatura','Visibilidad','Dirección Viento','Velocidad Viento','Precipitación','Nubosidad',
     'Nº Ref','Especie','Nombre Científico','Sexo','Edad','Tamaño',
     'Aerogenerador','Subparque','Hábitat','Estado Cadáver','Estado Descomposición',
-    'UTM X','UTM Y','Lat WGS84','Lon WGS84',
+    'Hora','UTM X','UTM Y','Lat WGS84','Lon WGS84',
     'Distancia Aerog.','Dirección Aerog.','Causa Probable','Tiempo Muerte (días)',
+    'Fecha aproximada',
     'Actuaciones','Infraestructura','Descripción Restos','Observaciones'
   ]];
   await fetch(
@@ -2875,15 +2876,56 @@ async function crearCarpetaDrive(nombre, parentId) {
 
 async function volcarFilasSheet(sheetId, tabName, v, cads, visitaId) {
   const pInfo = PARQUES[v.parque] || {};
+
+  // Nombre oficial del parque (a nivel de visita; se sobreescribe por cadáver en caso de Guijo)
+  const nombreParqueOficial = {
+    'AL': 'P.E. Alentisque',
+    'CE': 'P.E. Caramonte',
+    'CA': 'P.E. Carrascalejo',
+    'PA': 'P.E. Parideras',
+    'GUI': 'P.E. El Guijo', // fallback si no hay subparque
+  };
+
+  // Año y mes numérico desde fecha de visita
+  const fechaVisita = v.fecha || '';
+  const anio = fechaVisita ? fechaVisita.split('-')[0] : '';
+  const mesNum = fechaVisita ? String(parseInt(fechaVisita.split('-')[1], 10)) : '';
+
+  // Fecha aproximada: fecha - tiempo_muerte días
+  function fechaAproximada(fechaStr, tiempoMuerte) {
+    if (!fechaStr || !tiempoMuerte) return '';
+    const dias = parseFloat(tiempoMuerte);
+    if (isNaN(dias)) return '';
+    const d = new Date(fechaStr);
+    d.setDate(d.getDate() - Math.round(dias));
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const yyyy = d.getFullYear();
+    return `${dd}/${mm}/${yyyy}`;
+  }
+
+  // Nombre parque por cadáver (Guijo I / Guijo II)
+  function nombreParqueCad(c) {
+    if (v.parque === 'GUI') {
+      if (c.subparque_cad === 'Guijo I')  return 'P.E. Guijo I';
+      if (c.subparque_cad === 'Guijo II') return 'P.E. Guijo II';
+      return 'P.E. El Guijo';
+    }
+    return nombreParqueOficial[v.parque] || pInfo.nombre || v.parque || '';
+  }
+
   const fila = (c) => [
     visitaId || '',
-    pInfo.nombre||v.parque, v.municipio, v.mes||'', v.frecuencia||'', v.periodo||'',
-    v.fecha, v.hora_inicio||'', v.hora_fin||'', v.observador||'',
+    nombreParqueCad(c),
+    v.municipio, anio, mesNum, '', // Frecuencia vacía
+    v.periodo||'', v.fecha, v.hora_inicio||'', v.hora_fin||'', v.observador||'',
     v.temperatura||'', v.visibilidad||'', v.viento_dir||'', v.viento_vel||'', v.precipitacion||'', v.nubosidad||'',
     c.referencia||'', c.especie_comun||'', c.especie_cientifico||'', c.sexo||'', c.edad||'', c.tamano||'',
     c.aerogenerador||'', c.subparque_cad||'', c.habitat||'', c.estado_cadaver||'', c.estado_descomposicion||'',
+    c.hora||'',
     c.utmX||'', c.utmY||'', c.lat||'', c.lon||'',
     c.distancia||'', c.direccion_aero||'', c.diagnostico||'', c.tiempo_muerte||'',
+    fechaAproximada(v.fecha, c.tiempo_muerte),
     c.actuaciones||'', c.infraestructura||'', c.descripcion||'', c.observaciones||''
   ];
   const filasNuevas = cads.length ? cads.map(c => fila(c)) : [fila({})];

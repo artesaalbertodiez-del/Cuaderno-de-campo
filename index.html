@@ -6,6 +6,7 @@
 <title>Cuaderno de Campo — ENGIE v26</title>
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBnmL9E_YOvPD-4N_jvsqPrl1VlBcuErO8"></script>
 <script src="https://unpkg.com/docx@7.8.2/build/index.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
 :root {
   --verde: #2e7d32;
@@ -1285,24 +1286,21 @@ function initMapa(id, utmX, utmY) {
     + `?center=${lat},${lon}&zoom=17&size=500x350&maptype=satellite`
     + `&markers=color:red%7C${lat},${lon}&key=${GMAPS_STATIC_KEY}`;
 
-  // Capturar base64 del mapa para uso en docx
-  // Usar Static Maps con crossOrigin - funciona desde GitHub Pages con dominio autorizado
-  setTimeout(() => {
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = () => {
-      try {
-        const canvas = document.createElement('canvas');
-        canvas.width = img.naturalWidth; canvas.height = img.naturalHeight;
-        canvas.getContext('2d').drawImage(img, 0, 0);
-        cad.mapaBase64 = canvas.toDataURL('image/png');
-      } catch(e) {
-        cad.mapaBase64 = null;
-      }
-    };
-    img.onerror = () => { cad.mapaBase64 = null; };
-    img.src = cad.mapaImgUrl;
-  }, 500);
+  // Capturar el div del mapa con html2canvas tras renderizado completo
+  setTimeout(async () => {
+    try {
+      const mapaDiv = document.getElementById(`mapa-${id}`);
+      if (!mapaDiv || typeof html2canvas === 'undefined') return;
+      const canvas = await html2canvas(mapaDiv, {
+        useCORS: true, allowTaint: true,
+        width: mapaDiv.offsetWidth, height: mapaDiv.offsetHeight,
+        scale: 1, logging: false
+      });
+      cad.mapaBase64 = canvas.toDataURL('image/png');
+    } catch(e) {
+      cad.mapaBase64 = null;
+    }
+  }, 1500);
 }
 
 // ══════════════════════════════════════════════

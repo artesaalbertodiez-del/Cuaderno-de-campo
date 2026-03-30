@@ -1928,7 +1928,6 @@ function borrarTodoHistorial() {
 function exportWordHistorial(id) {
   const vis = getVisitas().find(v => v.id === id);
   if (!vis) return;
-  // Carga temporalmente los datos y genera el Word
   const v = vis.visita || {};
   const cads = vis.cadaveres || [];
   _exportWordDatos(v, cads);
@@ -1939,7 +1938,29 @@ function exportExcelHistorial(id) {
   _exportExcelDatos(vis.visita || {}, vis.cadaveres || []);
 }
 
-function actualizarPeriodo() {
+// Convierte una URL de imagen a base64 via fetch
+async function fetchImageBase64(url) {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const blob = await res.blob();
+    return await new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(blob);
+    });
+  } catch(e) {
+    return null;
+  }
+}
+
+function exportWord() {
+  guardarTodos();
+  _exportWordDatos(getDatosVisita(), cadaveres);
+}
+
+async function _exportWordDatos(v, cads) {
   const mes = document.getElementById('mes')?.value || '';
   const frec = document.getElementById('frecuencia')?.value || '';
   const periodo = mes && frec ? `${mes} (${frec})` : (mes || frec || '');
@@ -1950,6 +1971,14 @@ function actualizarPeriodo() {
 // ══════════════════════════════════════════════
 // GUARDAR / CARGAR (ALIAS COMPATIBILIDAD)
 // ══════════════════════════════════════════════
+function actualizarPeriodo() {
+  const mes = document.getElementById('mes')?.value || '';
+  const frec = document.getElementById('frecuencia')?.value || '';
+  const periodo = mes && frec ? `${mes} (${frec})` : (mes || frec || '');
+  const el = document.getElementById('periodo');
+  if (el) el.value = periodo;
+}
+
 function getDatosVisita() {
   actualizarPeriodo();
   return {
@@ -1984,255 +2013,6 @@ function capturarImgMapa(cad) {
     + `&key=${GMAPS_STATIC_KEY}`;
 }
 
-// ══════════════════════════════════════════════
-// EXPORTAR WORD
-// ══════════════════════════════════════════════
-function exportWord() {
-  guardarTodos();
-  _exportWordDatos(getDatosVisita(), cadaveres);
-}
-
-function _exportWordDatos(v, cads) {
-  const pInfo = PARQUES[v.parque] || {};
-  const pNombre = pInfo.nombre || v.parque || '—';
-  const pNombreMayus = pNombre.toUpperCase().replace('PARQUE EÓLICO','PARQUE EOLICO');
-  const municipio = v.municipio || pInfo.municipio || '—';
-  const provincia = pInfo.provincia || '—';
-  const municipioMayus = municipio.toUpperCase();
-  const provinciaMayus = provincia.toUpperCase();
-
-  toast('Generando PDF…');
-
-  const css = `
-    body{font-family:Arial,sans-serif;font-size:9.5pt;margin:1.5cm 1.8cm;color:#000}
-    table{border-collapse:collapse;width:100%;font-size:9pt}
-    td{padding:4px 6px;border:1px solid #aaa;vertical-align:top;line-height:1.4}
-    .sg td{background:#d0d0d0;font-weight:bold;padding:3px 6px;border:1px solid #888}
-    .lb{font-weight:bold}
-    em{font-style:italic}
-    sup{font-size:6.5pt}
-    .pb{page-break-before:always}
-    .cab{display:flex;align-items:flex-start;gap:12px;border-bottom:1.5px solid #555;padding-bottom:8px;margin-bottom:0.7cm}
-    .cab-ico{width:48px;height:48px;background:#888;flex-shrink:0;display:inline-block}
-    .cab-tipo{font-size:13.5pt;font-weight:bold;display:block;line-height:1.2}
-    .cab-sub{font-size:9pt;display:block;line-height:1.5}
-    .inv-tit{font-size:9.5pt;font-weight:bold;text-transform:uppercase;margin-bottom:4px;margin-top:0}
-    .gap07{margin-bottom:0.7cm}
-    .gap17{margin-bottom:1.7cm}
-    .pie{font-size:7.5pt;color:#444;line-height:1.6;border-top:1px solid #ccc;padding-top:8px;margin-top:auto}
-    .fv td{height:20px}
-    .mapa-desc{display:table;width:100%;margin-bottom:8px}
-    .mapa-td{display:table-cell;width:50%;vertical-align:top;padding-right:8px}
-    .desc-td{display:table-cell;width:50%;vertical-align:top}
-    .mapa-box{border:1px solid #aaa;background:#c8d8c0;height:170px;text-align:center;padding:10px;font-size:8pt;color:#444}
-    .desc-box{border:1px solid #aaa;height:170px;display:flex;flex-direction:column}
-    .desc-tit{background:#d0d0d0;font-weight:bold;font-size:9pt;padding:3px 8px;border-bottom:1px solid #aaa}
-    .desc-txt{padding:7px 8px;font-size:9pt;line-height:1.5;flex:1}
-    .fotos-tit{background:#d0d0d0;font-weight:bold;font-size:9pt;padding:3px 8px;border:1px solid #aaa;text-align:center;margin-bottom:0}
-    .foto-td{width:50%;padding:5px;border:1px solid #aaa;border-top:none;vertical-align:top}
-    img{max-width:100%;height:auto;display:block}
-    @page{size:A4;margin:1.5cm 1.8cm}
-    @media print{
-      body{margin:0}
-      .pb{page-break-before:always}
-      table{page-break-inside:avoid}
-      img{max-width:100%;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-      .sg td{-webkit-print-color-adjust:exact;print-color-adjust:exact;background:#d0d0d0!important}
-    }
-  `;
-
-  const cabHtml = (tipo) => `
-<table style="width:100%;border-collapse:collapse;margin-bottom:0.7cm">
-<tr>
-<td style="width:52px;padding:0;border:none;vertical-align:top">
-  <div style="width:48px;height:48px;background:#888"></div>
-</td>
-<td style="border:none;vertical-align:top;padding:0 0 0 12px;border-bottom:1.5px solid #555;padding-bottom:8px">
-  <span style="font-size:13.5pt;font-weight:bold;display:block;line-height:1.2">${tipo}</span>
-  <span style="font-size:9pt;display:block;line-height:1.5">SEGUIMIENTO AMBIENTAL ${pNombreMayus}</span>
-  <span style="font-size:9pt;display:block;line-height:1.5">TÉRMINO MUNICIPAL DE ${municipioMayus} (${provinciaMayus})</span>
-</td>
-</tr>
-</table>`;
-
-  // ── HOJA 1: FICHA DE CAMPO ──
-  const periodoStr = v.periodo || '—';
-  const invRows = cads.length
-    ? cads.map(c => `<tr>
-        <td>${c.referencia||''}</td>
-        <td>${c.especie_comun||''}${c.especie_cientifico?` (<em>${c.especie_cientifico}</em>)`:''}</td>
-        <td>${c.aerogenerador||''}</td>
-        <td>${c.observaciones||''}</td>
-      </tr>`).join('')
-    : `<tr style="height:20px"><td></td><td></td><td></td><td></td></tr>
-       <tr style="height:20px"><td></td><td></td><td></td><td></td></tr>
-       <tr><td colspan="4" style="font-weight:bold;padding:5px 6px">No se han encontrado restos</td></tr>`;
-
-  let doc = `<html xmlns:o='urn:schemas-microsoft-com:office:office'
-    xmlns:w='urn:schemas-microsoft-com:office:word'
-    xmlns:v='urn:schemas-microsoft-com:vml'
-    xmlns='http://www.w3.org/TR/REC-html40'>
-<head><meta charset="UTF-8">
-<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View></w:WordDocument></xml><![endif]-->
-<style>${css}</style></head><body>
-
-${cabHtml('FICHA DE CAMPO')}
-
-<table style="margin-bottom:0.7cm">
-<tr class="sg"><td colspan="5">Datos generales</td></tr>
-<tr>
-  <td colspan="2"><span class="lb">Visita correspondiente al mes de</span> ${periodoStr}</td>
-  <td><span class="lb">Fecha</span> ${fmtFecha(v.fecha)}</td>
-  <td><span class="lb">Hora inicio</span> ${v.hora_inicio||'—'}</td>
-  <td><span class="lb">Hora fin</span> ${v.hora_fin||'—'}</td>
-</tr>
-<tr><td colspan="5"><span class="lb">Observador</span> ${v.observador||'—'}</td></tr>
-</table>
-
-<table style="margin-bottom:1.7cm">
-<tr class="sg"><td colspan="6">Tiempo atmosférico</td></tr>
-<tr>
-  <td><span class="lb">Temperatura<sup> (1)</sup></span><br>${v.temperatura||'—'}</td>
-  <td><span class="lb">Visibilidad</span><br>${v.visibilidad||'—'}</td>
-  <td><span class="lb">Dir. viento</span><br>${v.viento_dir||'—'}</td>
-  <td><span class="lb">Velocidad<sup> (2)</sup></span><br>${v.viento_vel||'—'}</td>
-  <td><span class="lb">Precipitación</span><br>${v.precipitacion||'—'}</td>
-  <td><span class="lb">Nubosidad</span><br>${v.nubosidad||'—'}</td>
-</tr>
-</table>
-
-<p style="font-size:9.5pt;font-weight:bold;text-transform:uppercase;margin-bottom:4px">Inventario de restos</p>
-<table>
-<tr class="sg"><td style="width:15%">Nº Ref</td><td style="width:37%">Especie</td><td style="width:13%">Nº aerogenerador</td><td>Observaciones</td></tr>
-${invRows}
-</table>
-
-<p style="font-size:7.5pt;color:#444;line-height:1.6;border-top:1px solid #ccc;padding-top:8px;margin-top:20px">
-(1) Temperatura: mucho calor (+30°) · calor (25-29°) · buena (18-24°) · fresca (12-17°) · frío (5-11°) · muy frío (-5°)<br>
-(2) Velocidad: nula · brisa · viento medio · viento fuerte · viento muy fuerte
-</p>`;
-
-  // ── HOJAS 2+: FICHA DE RESTOS por cadáver ──
-  for (const c of cads) {
-    const mapaUrl = (c.lat && c.lon)
-      ? `https://maps.googleapis.com/maps/api/staticmap?center=${c.lat},${c.lon}&zoom=17&size=480x360&maptype=satellite&markers=color:red%7C${c.lat},${c.lon}&key=AIzaSyBFgl5TwEQcgCmjFzxWoLSGAEOwHEkOdnw`
-      : null;
-
-    // Fotos: máximo 2, con reborde blanco (padding en td)
-    const fotosList = (c.fotos||[]).slice(0,2);
-    const fotosHtml = fotosList.length ? `
-<p style="font-size:9.5pt;font-weight:bold;background:#d0d0d0;padding:3px 8px;border:1px solid #aaa;text-align:center;margin:0">Fotografías</p>
-<table style="margin-bottom:0"><tr>
-${fotosList.map(f => {
-  const src = f.startsWith('data:') ? f : `data:image/jpeg;base64,${f}`;
-  return `<td style="width:50%;padding:6px;border:1px solid #aaa;border-top:none;text-align:center">
-    <img src="${src}" style="max-width:100%;max-height:220px;display:block;margin:0 auto">
-  </td>`;
-}).join('')}
-${fotosList.length < 2 ? '<td style="width:50%;border:1px solid #aaa;border-top:none"></td>' : ''}
-</tr></table>` : '';
-
-    doc += `
-<div class="pb"></div>
-
-${cabHtml('FICHA DE RESTOS')}
-
-<table style="margin-bottom:6px">
-<tr class="sg"><td colspan="4">Datos generales</td></tr>
-<tr>
-  <td style="width:14%" class="lb">Parque</td>
-  <td style="width:36%">${pNombre}</td>
-  <td style="width:20%" class="lb">Término municipal</td>
-  <td>${municipio}</td>
-</tr>
-<tr>
-  <td class="lb">Fecha</td>
-  <td>${fmtFecha(v.fecha)}</td>
-  <td class="lb">Hora</td>
-  <td>${c.hora||'—'}</td>
-</tr>
-<tr>
-  <td class="lb" colspan="2">Tiempo estimado desde la muerte</td>
-  <td colspan="2">${c.tiempo_muerte||'—'}</td>
-</tr>
-</table>
-
-<table style="margin-bottom:6px">
-<tr class="sg"><td colspan="4">Datos de la especie</td></tr>
-<tr>
-  <td style="width:22%" class="lb">Nº referencia</td>
-  <td style="width:28%">${c.referencia||'—'}</td>
-  <td style="width:24%" class="lb">Sexo</td>
-  <td>${c.sexo||'—'}</td>
-</tr>
-<tr>
-  <td class="lb">Especie</td>
-  <td>${c.especie_comun||'—'}${c.especie_cientifico?` (<em>${c.especie_cientifico}</em>)`:''}</td>
-  <td class="lb">Edad</td>
-  <td>${c.edad||'—'}</td>
-</tr>
-</table>
-
-<table style="margin-bottom:8px">
-<tr class="sg"><td colspan="4">Localización</td></tr>
-<tr>
-  <td style="width:20%" class="lb">Nº de aerogenerador</td>
-  <td style="width:24%">${c.aerogenerador||'—'}</td>
-  <td style="white-space:nowrap" class="lb">Hábitat</td>
-  <td>${c.habitat||'—'}</td>
-</tr>
-<tr>
-  <td class="lb">Coord. UTM ETRS89</td>
-  <td>X &nbsp;${c.utmX||'—'} &nbsp;&nbsp; Y &nbsp;${c.utmY||'—'}</td>
-  <td style="white-space:nowrap" class="lb">Distancia aerogenerador</td>
-  <td>${c.distancia||'—'}</td>
-</tr>
-<tr>
-  <td style="white-space:nowrap" class="lb">Diagnóstico mortandad</td>
-  <td colspan="3">${c.diagnostico||'—'}</td>
-</tr>
-<tr>
-  <td class="lb">Observaciones</td>
-  <td colspan="3">${c.observaciones||'—'}</td>
-</tr>
-</table>
-
-<table style="width:100%;border-collapse:collapse;margin-bottom:8px">
-<tr>
-<td style="width:50%;padding-right:8px;border:none;vertical-align:top">
-  <table style="width:100%;height:170px;border-collapse:collapse">
-  <tr><td style="border:1px solid #aaa;background:#c8d8c0;text-align:center;padding:10px;font-size:8pt;color:#444;vertical-align:middle">
-    ${mapaUrl
-      ? `<img src="${mapaUrl}" style="max-width:100%;max-height:160px;display:block;margin:0 auto">`
-      : '(Sin coordenadas GPS)'}
-  </td></tr>
-  </table>
-</td>
-<td style="width:50%;border:none;vertical-align:top">
-  <table style="width:100%;height:170px;border-collapse:collapse">
-  <tr><td style="border:1px solid #aaa;border-bottom:none;background:#d0d0d0;font-weight:bold;font-size:9pt;padding:3px 8px">Descripción de los restos</td></tr>
-  <tr><td style="border:1px solid #aaa;padding:7px 8px;font-size:9pt;line-height:1.5;vertical-align:top">${c.descripcion||'—'}</td></tr>
-  </table>
-</td>
-</tr>
-</table>
-
-${fotosHtml}
-`;
-  }
-
-  doc += '</body></html>';
-  // Abrir en ventana nueva y lanzar diálogo de impresión (guardar como PDF)
-  const win = window.open('', '_blank');
-  if (!win) { toast('⚠ Permite ventanas emergentes para generar el PDF'); return; }
-  win.document.write(doc);
-  win.document.close();
-  win.focus();
-  setTimeout(() => { win.print(); }, 800);
-  toast('✓ Word descargado');
-}
-
-// ══════════════════════════════════════════════
 // EXPORTAR EXCEL (CSV)
 // ══════════════════════════════════════════════
 function exportExcel() {
@@ -2610,23 +2390,6 @@ async function subirTodasPendientes() {
   for (const id of pendientes) { await subirVisita(id); }
 }
 
-// Convierte una URL de imagen a base64 via fetch
-async function fetchImageBase64(url) {
-  try {
-    const res = await fetch(url);
-    if (!res.ok) return null;
-    const blob = await res.blob();
-    return await new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = () => resolve(null);
-      reader.readAsDataURL(blob);
-    });
-  } catch(e) {
-    return null;
-  }
-}
-
 async function generarDocx(v, cads) {
   const docxLib = window.docx;
   if (!docxLib || !docxLib.Document) throw new Error('Librería docx no disponible. Recarga la página.');
@@ -2881,41 +2644,60 @@ async function generarDocx(v, cads) {
       gap(120),
     );
 
-    // Mapa en docx
+    // Mapa + Descripción en 2 columnas
     const CW2 = Math.floor(CW / 2);
-    let mapaDocxLat = cd.lat, mapaDocxLon = cd.lon;
-    if ((!mapaDocxLat || !mapaDocxLon) && cd.utmX && cd.utmY) {
-      const ll = utmToWgs84(parseFloat(cd.utmX), parseFloat(cd.utmY));
-      if (Number.isFinite(ll.lat) && Number.isFinite(ll.lng)) {
-        mapaDocxLat = ll.lat.toFixed(6);
-        mapaDocxLon = ll.lng.toFixed(6);
+    let mapaDocxCell;
+    try {
+      let mapaLat = cd.lat, mapaLon = cd.lon;
+      if ((!mapaLat || !mapaLon) && cd.utmX && cd.utmY) {
+        const ll = utmToWgs84(parseFloat(cd.utmX), parseFloat(cd.utmY));
+        if (Number.isFinite(ll.lat) && Number.isFinite(ll.lng)) {
+          mapaLat = ll.lat.toFixed(6);
+          mapaLon = ll.lng.toFixed(6);
+        }
       }
-    }
-    if (mapaDocxLat && mapaDocxLon) {
-      try {
-        const mapaStaticUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${mapaDocxLat},${mapaDocxLon}&zoom=17&size=480x360&maptype=satellite&markers=color:red%7C${mapaDocxLat},${mapaDocxLon}&key=${GMAPS_STATIC_KEY}`;
+      if (mapaLat && mapaLon) {
+        const mapaStaticUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${mapaLat},${mapaLon}&zoom=17&size=480x360&maptype=satellite&markers=color:red%7C${mapaLat},${mapaLon}&key=${GMAPS_STATIC_KEY}`;
         const mapaB64 = await fetchImageBase64(mapaStaticUrl);
         if (mapaB64) {
           const mapaRaw = mapaB64.split(',')[1];
-          const mapaByteChars = atob(mapaRaw);
-          const mapaByteArr = new Uint8Array(mapaByteChars.length);
-          for (let mi = 0; mi < mapaByteChars.length; mi++) mapaByteArr[mi] = mapaByteChars.charCodeAt(mi);
-          fichasRestos.push(
-            new Table({
-              width: { size: CW, type: WidthType.DXA }, columnWidths: [CW],
-              rows: [
-                new TableRow({ children: [new TableCell({
-                  width: { size: CW, type: WidthType.DXA }, borders: bs(),
-                  margins: { top: 60, bottom: 60, left: 60, right: 60 },
-                  children: [par([new ImageRun({ data: mapaByteArr, transformation: { width: 400, height: 200 }, type: 'png' })], { align: AlignmentType.CENTER })]
-                })]})
+          const mapaBytes = Uint8Array.from(atob(mapaRaw), c => c.charCodeAt(0));
+          mapaDocxCell = new TableCell({
+            width: { size: CW2, type: WidthType.DXA }, borders: bs(),
+            margins: { top: 60, bottom: 60, left: 60, right: 60 },
+            children: [par([new ImageRun({ data: mapaBytes, transformation: { width: 221, height: 166 }, type: 'png' })], { align: AlignmentType.CENTER })]
+          });
+        }
+      }
+    } catch(e) { /* mapa no disponible */ }
+
+    if (!mapaDocxCell) {
+      mapaDocxCell = new TableCell({
+        width: { size: CW2, type: WidthType.DXA }, borders: bs(),
+        margins: marg, verticalAlign: VerticalAlign.CENTER,
+        children: [par([run('Sin coordenadas GPS', { italic: true, color: '888888' })], { align: AlignmentType.CENTER })]
+      });
+    }
+
+    fichasRestos.push(
+      new Table({
+        width: { size: CW, type: WidthType.DXA }, columnWidths: [CW2, CW2],
+        rows: [
+          new TableRow({ children: [
+            mapaDocxCell,
+            new TableCell({
+              width: { size: CW2, type: WidthType.DXA }, borders: bs(),
+              margins: { top: 60, bottom: 60, left: 60, right: 60 },
+              children: [
+                par([run('Descripción de los restos', { bold: true })]),
+                par([run(cd.descripcion || '')]),
               ]
             }),
-            gap(120),
-          );
-        }
-      } catch(e) { /* mapa no disponible */ }
-    }
+          ]}),
+        ]
+      }),
+      gap(120),
+    );
 
     // Fotografías
     const fotosList = (cd.fotos || []).slice(0, 2);
@@ -3431,6 +3213,13 @@ ${invRows}
     }
     const lat = pvLat, lon = pvLon;
 
+    // Cargar mapa como base64
+    let mapaBase64 = null;
+    if (lat && lon) {
+      const mapaStaticUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lon}&zoom=17&size=480x360&maptype=satellite&markers=color:red%7C${lat},${lon}&key=${GMAPS_STATIC_KEY}`;
+      mapaBase64 = await fetchImageBase64(mapaStaticUrl);
+    }
+
     const fotosList = (c.fotos||[]).slice(0,2);
     const fotosHtml = fotosList.length ? `
 <table><tr class="sg"><td colspan="2" style="text-align:center">Fotografías</td></tr>
@@ -3496,9 +3285,9 @@ ${cabHtml('FICHA DE RESTOS')}
 <table style="width:100%;border-collapse:collapse;margin-bottom:8px">
 <tr>
   <td style="width:50%;border:none;vertical-align:top;padding-right:8px">
-    ${(lat && lon)
-      ? `<div class="pv-mapa" data-lat="${lat}" data-lon="${lon}" style="width:100%;height:200px;border:1px solid #aaa;border-radius:4px;margin-bottom:8px;background:#e8e8e8"></div>`
-      : `<div class="mapa-box">Sin coordenadas GPS</div>`}
+    ${mapaBase64
+      ? `<img src="${mapaBase64}" style="max-width:100%;max-height:200px;display:block;margin:0 auto;border:1px solid #aaa;border-radius:4px">`
+      : (lat && lon ? `<div class="mapa-box">Mapa no disponible</div>` : `<div class="mapa-box">Sin coordenadas GPS</div>`)}
   </td>
   <td style="width:50%;border:none;vertical-align:top">
     <table style="height:100%;margin-bottom:0">

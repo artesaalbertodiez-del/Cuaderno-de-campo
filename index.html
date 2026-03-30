@@ -3564,6 +3564,14 @@ function toast(msg) {
 // ══════════════════════════════════════════════
 // INIT
 // ══════════════════════════════════════════════
+window.onerror = function(msg, src, line, col, err) {
+  const d = document.createElement('div');
+  d.style.cssText = 'position:fixed;inset:0;background:white;z-index:99999;padding:20px;font-family:monospace;font-size:12px;overflow:auto;color:red';
+  d.innerHTML = '<b>Error JS:</b><br>' + msg + '<br>Línea: ' + line + '<br>' + (err ? err.stack : '');
+  document.body.appendChild(d);
+  return false;
+};
+
 try {
   migrarV6();
   actualizarMenuContadores();

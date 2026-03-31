@@ -6,7 +6,6 @@
 <title>Cuaderno de Campo — ENGIE v26</title>
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBnmL9E_YOvPD-4N_jvsqPrl1VlBcuErO8"></script>
 <script src="https://unpkg.com/docx@7.8.2/build/index.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
 :root {
   --verde: #2e7d32;
@@ -2612,48 +2611,6 @@ async function subirTodasPendientes() {
 }
 
 // Carga imagen de Static Maps via elemento img + canvas
-async function fetchImageBase64(url) {
-  // Intento 1: canvas con crossOrigin
-  try {
-    const b64 = await new Promise((resolve, reject) => {
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      img.onload = () => {
-        try {
-          const canvas = document.createElement('canvas');
-          canvas.width = img.naturalWidth || 480;
-          canvas.height = img.naturalHeight || 360;
-          canvas.getContext('2d').drawImage(img, 0, 0);
-          resolve(canvas.toDataURL('image/png'));
-        } catch(e) { reject(e); }
-      };
-      img.onerror = () => reject(new Error('load error'));
-      img.src = url;
-    });
-    if (b64 && b64.length > 100) return b64;
-  } catch(e) {}
-
-  // Intento 2: sin crossOrigin (canvas tainted — solo funciona en algunos contextos)
-  try {
-    const b64 = await new Promise((resolve, reject) => {
-      const img = new Image();
-      img.onload = () => {
-        try {
-          const canvas = document.createElement('canvas');
-          canvas.width = 480; canvas.height = 360;
-          canvas.getContext('2d').drawImage(img, 0, 0);
-          resolve(canvas.toDataURL('image/png'));
-        } catch(e) { reject(e); }
-      };
-      img.onerror = () => reject(new Error('load error'));
-      img.src = url;
-    });
-    if (b64 && b64.length > 100) return b64;
-  } catch(e) {}
-
-  return null;
-}
-
 async function generarDocx(v, cads) {
   const docxLib = window.docx;
   if (!docxLib || !docxLib.Document) throw new Error('Librería docx no disponible. Recarga la página.');
@@ -2908,7 +2865,7 @@ async function generarDocx(v, cads) {
       gap(120),
     );
 
-    // Mapa en docx — descargar via fetch y convertir a bytes para ImageRun
+    // Mapa en docx — coordenadas UTM (imagen pendiente de implementar)
     {
       let mapaLat = cd.lat, mapaLon = cd.lon;
       if ((!mapaLat || !mapaLon) && cd.utmX && cd.utmY) {
@@ -2917,28 +2874,6 @@ async function generarDocx(v, cads) {
           mapaLat = ll.lat.toFixed(6);
           mapaLon = ll.lng.toFixed(6);
         }
-      }
-      if (mapaLat && mapaLon) {
-        try {
-          const mapaUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${mapaLat},${mapaLon}&zoom=17&size=480x360&maptype=satellite&markers=color:red%7C${mapaLat},${mapaLon}&key=${GMAPS_STATIC_KEY}`;
-          const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(mapaUrl)}`;
-          const mapaResp = await fetch(proxyUrl);
-          const mapaBlob = await mapaResp.blob();
-          const mapaByteArr = new Uint8Array(await mapaBlob.arrayBuffer());
-          if (mapaByteArr.length > 100) {
-            fichasRestos.push(
-              new Table({
-                width: { size: CW, type: WidthType.DXA }, columnWidths: [CW],
-                rows: [new TableRow({ children: [new TableCell({
-                  width: { size: CW, type: WidthType.DXA }, borders: bs(),
-                  margins: { top: 60, bottom: 60, left: 60, right: 60 },
-                  children: [par([new ImageRun({ data: mapaByteArr, transformation: { width: 400, height: 200 }, type: 'png' })], { align: AlignmentType.CENTER })]
-                })]})]
-              }),
-              gap(120),
-            );
-          }
-        } catch(e) { /* mapa no disponible */ }
       }
     }
 
@@ -3296,7 +3231,10 @@ function _abrirPreview(v, cads, mostrarSync) {
 
   content.innerHTML = _generarHTMLPreview(v, cads);
 
-  // Inicializar mapas Google Maps JS en cada div .pv-mapa
+  modal.style.display = 'block';
+  document.body.style.overflow = 'hidden';
+
+  // Inicializar mapas Google Maps JS — modal ya visible para que los divs tengan dimensiones
   setTimeout(() => {
     content.querySelectorAll('.pv-mapa[data-lat]').forEach(div => {
       const lat = parseFloat(div.getAttribute('data-lat'));
@@ -3314,18 +3252,18 @@ function _abrirPreview(v, cads, mostrarSync) {
           gestureHandling: 'none',
         });
         new google.maps.Marker({ position: { lat, lng: lon }, map });
+        // Forzar resize para que Maps calcule bien las dimensiones
+        google.maps.event.trigger(map, 'resize');
+        map.setCenter({ lat, lng: lon });
       } catch(e) {
         div.style.background = '#c8d8c0';
         div.style.display = 'flex';
         div.style.alignItems = 'center';
         div.style.justifyContent = 'center';
-        div.textContent = `UTM: ${div.getAttribute('data-lat')}, ${div.getAttribute('data-lon')}`;
+        div.textContent = `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
       }
     });
-  }, 200);
-
-  modal.style.display = 'block';
-  document.body.style.overflow = 'hidden';
+  }, 400);
 }
 
 function cerrarPreview() {

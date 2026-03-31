@@ -2561,22 +2561,20 @@ async function subirFotosDrive(vis, carpetaRaiz, subCarpeta) {
 }
 
 async function asegurarCabecerasSheet(sheetId, tabName) {
-  const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(tabName)}!A1:AM1`;
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(tabName)}!A1:AJ1`;
   const res = await fetch(url, { headers: { Authorization: `Bearer ${gAccessToken}` } });
   if (!res.ok) return;
   const data = await res.json();
   if ((data.values?.[0] || []).length > 0) return;
   const cabeceras = [[
-    'ID_Visita',
-    'Parque','Municipio','Año','Mes','Frecuencia','Periodo','Fecha','Hora Inicio','Hora Fin','Observador',
-    'Temperatura','Visibilidad','Dirección Viento','Velocidad Viento','Precipitación','Nubosidad',
-    'Nº Ref','Especie','Nombre Científico','Sexo','Edad','Tamaño',
-    'Aerogenerador','Subparque','Hábitat','Estado Cadáver','Estado Descomposición',
-    'Hora','UTM X','UTM Y','Lat WGS84','Lon WGS84',
-    'Sistema referencia',
-    'Distancia Aerog.','Dirección Aerog.','Causa Probable','Tiempo Muerte (días)',
-    'Fecha aproximada',
-    'Actuaciones','Infraestructura','Descripción Restos','Observaciones'
+    'ID_Visita','Consultor','Subparque','Fecha','Hora','Fecha aproximada',
+    'Infraestructura','Sistema referencia','UTM X','UTM Y',
+    'Aerogenerador','Distancia Aerog.','Dirección Aerog.',
+    'Especie','Nombre Científico','Causa Probable','Tamaño',
+    'Mes','Frecuencia','Tamaño/frecuencia','Año',
+    'Sexo','Edad','Nº Ref','Observaciones','Hábitat','Promotor',
+    'Estado Cadáver','Estado Descomposición','Actuaciones',
+    'Imagen','Lat WGS84','Lon WGS84'
   ]];
   await fetch(
     `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(tabName)}!A1:append?valueInputOption=USER_ENTERED`,
@@ -3095,20 +3093,38 @@ async function volcarFilasSheet(sheetId, tabName, v, cads, visitaId) {
 
   const fila = (c) => [
     visitaId || '',
-    nombreParqueCad(c),
-    v.municipio, anio, mesNum, '', // Frecuencia vacía
-    v.periodo||'', v.fecha,
-    horaTexto(v.hora_inicio), horaTexto(v.hora_fin),
-    v.observador||'',
-    v.temperatura||'', v.visibilidad||'', v.viento_dir||'', v.viento_vel||'', v.precipitacion||'', v.nubosidad||'',
-    c.referencia||'', c.especie_comun||'', c.especie_cientifico||'', c.sexo||'', c.edad||'', c.tamano||'',
-    c.aerogenerador||'', subparqueCad(c), c.habitat||'', c.estado_cadaver||'', c.estado_descomposicion||'',
-    horaTexto(c.hora||''),
-    c.utmX||'', c.utmY||'', c.lat||'', c.lon||'',
-    'WGS84',
-    c.distancia||'', c.direccion_aero||'', c.diagnostico||'', c.tiempo_muerte||'',
-    fechaAproximada(v.fecha, c.tiempo_muerte),
-    c.actuaciones||'', c.infraestructura||'', c.descripcion||'', c.observaciones||''
+    'ARTESA',                           // Consultor
+    subparqueCad(c),                    // Subparque
+    v.fecha,                            // Fecha
+    horaTexto(c.hora||''),              // Hora (del cadáver)
+    fechaAproximada(v.fecha, c.tiempo_muerte), // Fecha aproximada
+    c.infraestructura||'',              // Infraestructura
+    'WGS84',                            // Sistema referencia
+    c.utmX||'',                         // UTM X
+    c.utmY||'',                         // UTM Y
+    c.aerogenerador||'',                // Aerogenerador
+    c.distancia||'',                    // Distancia Aerog.
+    c.direccion_aero||'',              // Dirección Aerog.
+    c.especie_comun||'',               // Especie
+    c.especie_cientifico||'',          // Nombre Científico
+    c.diagnostico||'',                 // Causa Probable
+    c.tamano||'',                      // Tamaño
+    mesNum,                            // Mes (número)
+    v.frecuencia||'',                  // Frecuencia
+    '',                                // Tamaño/frecuencia (vacío)
+    anio,                              // Año
+    c.sexo||'',                        // Sexo
+    c.edad||'',                        // Edad
+    c.referencia||'',                  // Nº Ref
+    c.observaciones||'',               // Observaciones
+    c.habitat||'',                     // Hábitat
+    'ENGIE',                           // Promotor
+    c.estado_cadaver||'',              // Estado Cadáver
+    c.estado_descomposicion||'',       // Estado Descomposición
+    c.actuaciones||'',                 // Actuaciones
+    (c.fotos && c.fotos.length > 0) ? 'Sí' : 'No', // Imagen
+    c.lat||'',                         // Lat WGS84
+    c.lon||'',                         // Lon WGS84
   ];
   const filasNuevas = cads.length ? cads.map(c => fila(c)) : [fila({})];
 

@@ -1461,7 +1461,18 @@ function renderCadaveres() {
         </div>
         <div class="campo" style="margin-bottom:12px">
           <label>Observaciones</label>
-          <input type="text" data-c="observaciones" placeholder="Ej. Depositado en arcón congelador..." value="${cad.observaciones||''}">
+          ${(()=>{
+            const p = document.getElementById('parque')?.value;
+            if (p === 'GUI') {
+              return `<input type="text" data-c="observaciones" placeholder="Observaciones..." value="${cad.observaciones||''}">`;
+            } else {
+              return `<select data-c="observaciones">
+                <option value="">—</option>
+                <option value="Depositado en el arcón congelador: SET Esteras"${cad.observaciones==='Depositado en el arcón congelador: SET Esteras'?' selected':''}>Depositado en el arcón congelador: SET Esteras</option>
+                <option value="Depositado en el arcón congelador: SET Alentisque"${cad.observaciones==='Depositado en el arcón congelador: SET Alentisque'?' selected':''}>Depositado en el arcón congelador: SET Alentisque</option>
+              </select>`;
+            }
+          })()}
         </div>
         <div class="fila f2" style="margin-bottom:12px">
           <div class="campo"><label>Actuaciones</label>
@@ -2865,39 +2876,26 @@ async function generarDocx(v, cads) {
       gap(120),
     );
 
-    // Mapa en docx — coordenadas UTM (imagen pendiente de implementar)
-    {
-      let mapaLat = cd.lat, mapaLon = cd.lon;
-      if ((!mapaLat || !mapaLon) && cd.utmX && cd.utmY) {
-        const ll = utmToWgs84(parseFloat(cd.utmX), parseFloat(cd.utmY));
-        if (Number.isFinite(ll.lat) && Number.isFinite(ll.lng)) {
-          mapaLat = ll.lat.toFixed(6);
-          mapaLon = ll.lng.toFixed(6);
-        }
-      }
-    }
-
-    // Fotografías
+    // Fotografías — alto fijo 9,5cm (~359px a 96dpi), ancho proporcional
     const fotosList = (cd.fotos || []).slice(0, 2);
     const fotosCells = await Promise.all(fotosList.map(async (f) => {
       try {
-        // Separar siempre el base64 puro del prefijo data:
         const base64 = f.includes(',') ? f.split(',')[1] : f;
         const dataUrl = `data:image/jpeg;base64,${base64}`;
         const byteChars = atob(base64);
         const byteArr = new Uint8Array(byteChars.length);
         for (let i = 0; i < byteChars.length; i++) byteArr[i] = byteChars.charCodeAt(i);
 
-        // Leer dimensiones reales de la imagen para calcular ancho proporcional
+        // Leer dimensiones reales para calcular ancho proporcional
         const imgDims = await new Promise((resolve) => {
           const img = new Image();
           img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight });
-          img.onerror = () => resolve({ w: 4, h: 3 }); // fallback 4:3
+          img.onerror = () => resolve({ w: 4, h: 3 });
           img.src = dataUrl;
         });
 
-        // Alto fijo: 6.5cm = ~246px a 96dpi. Ancho proporcional.
-        const targetH = 246;
+        // Alto fijo: 9,5cm = ~359px a 96dpi. Ancho proporcional.
+        const targetH = 359;
         const targetW = Math.round((imgDims.w / imgDims.h) * targetH);
 
         return new TableCell({

@@ -1391,7 +1391,7 @@ function renderCadaveres() {
         <div class="subsec">Localización</div>
         <div class="fila f2" style="margin-bottom:8px">
           <div class="campo"><label>Nº de aerogenerador</label>
-            <select data-c="aerogenerador" onchange="actualizarInventario(); _onAeroChange(${cad.id}, this.value)" oninput="_onAeroChange(${cad.id}, this.value)">
+            <select data-c="aerogenerador" onchange="actualizarInventario(); _onAeroChange(${cad.id}, this.value)">
               <option value="">—</option>
               ${(()=>{ const p=document.getElementById('parque')?.value; const sub=document.getElementById('subparque')?.value; const key = p==='GUI'?(sub==='Guijo II'?'GUI-II':'GUI-I'):p; return (AEROGENERADORES[key]||[]).map(n=>`<option value="${n}"${cad.aerogenerador==n?' selected':''}>${n}</option>`).join(''); })()}
             </select>
@@ -1538,35 +1538,7 @@ function _onAeroChange(id, valor) {
   const cad = cadaveres.find(c => c.id === id);
   if (!cad) return;
   cad.aerogenerador = valor;
-  guardarCampos(id); // sincronizar todos los campos del DOM al objeto
-  if (cad.utmX && cad.utmY) _actualizarDistancia(id, cad);
-}
-
-function _actualizarDistancia(id, cad) {
-  const parqueCod = document.getElementById('parque')?.value;
-  if (!parqueCod) return;
-
-  // Leer aerogenerador del DOM primero (más fiable que cad.aerogenerador si aún no se sincronizó)
-  const aeroEl = document.querySelector(`.cadaver-card[data-id="${id}"] [data-c="aerogenerador"]`);
-  const aeroCod = (aeroEl?.value) || cad.aerogenerador;
-  if (!aeroCod) return;
-
-  // Leer subparque del DOM para Guijo
-  const subEl = document.querySelector(`.cadaver-card[data-id="${id}"] [data-c="subparque_cad"]`);
-  const subparque = (subEl?.value) || cad.subparque_cad || '';
-
-  // Leer UTM del objeto cad (ya actualizado antes de llamar a esta función)
-  const utmX = cad.utmX;
-  const utmY = cad.utmY;
-  if (!utmX || !utmY) return;
-
-  const dist = calcularDistanciaAero(parqueCod, subparque, aeroCod, utmX, utmY);
-  if (dist !== null) {
-    cad.distancia = `${dist} m`;
-    const distEl = document.querySelector(`.cadaver-card[data-id="${id}"] [data-c="distancia"]`);
-    if (distEl) distEl.value = cad.distancia;
-    toast(`✓ Distancia al aerogenerador: ${dist} m`);
-  }
+  guardarCampos(id);
 }
 
 function obtenerGPS(id) {
@@ -1581,14 +1553,7 @@ function obtenerGPS(id) {
     cad.utmX = utm.x.toString(); cad.utmY = utm.y.toString();
     document.getElementById(`utmX-${id}`).value = cad.utmX;
     document.getElementById(`utmY-${id}`).value = cad.utmY;
-
-    // Sincronizar todos los campos del DOM antes de calcular (necesario en Safari iOS)
     guardarCampos(id);
-
-    // Calcular distancia — con pequeño delay para que Safari iOS actualice el DOM
-    setTimeout(() => _actualizarDistancia(id, cad), 100);
-
-    // Show map
     const wrap = document.getElementById(`mapa-wrap-${id}`);
     if (wrap) wrap.style.display = 'block';
     initMapa(id, cad.utmX, cad.utmY);
@@ -1603,11 +1568,7 @@ function utmManual(id) {
   const y = document.getElementById(`utmY-${id}`)?.value;
   cad.utmX = x; cad.utmY = y;
   if (!x || !y || isNaN(parseFloat(x)) || isNaN(parseFloat(y))) return;
-
-  // Sincronizar campos y calcular con delay para Safari iOS
   guardarCampos(id);
-  setTimeout(() => _actualizarDistancia(id, cad), 100);
-
   const wrap = document.getElementById(`mapa-wrap-${id}`);
   if (wrap) wrap.style.display = 'block';
   initMapa(id, x, y);
@@ -3084,11 +3045,23 @@ async function volcarFilasSheet(sheetId, tabName, v, cads, visitaId) {
     return nombreParqueCad(c);
   }
 
-  // Hora como texto forzado (prefijo ' para evitar que Sheets lo interprete como número)
+  // Hora en formato hh:mm como texto
   function horaTexto(h) {
     if (!h) return '';
-    // Asegurar formato HH:MM con apóstrofe para forzar texto en Sheets
+    // Asegurar formato hh:mm (ya viene así desde el input time)
     return h;
+  }
+
+  // Distancia sin unidad — solo número
+  function distanciaNum(d) {
+    if (!d) return '';
+    return d.toString().replace(/\s*m$/i, '').trim();
+  }
+
+  // Lat/Lon con coma como separador decimal
+  function coordComa(v) {
+    if (!v) return '';
+    return v.toString().replace('.', ',');
   }
 
   const fila = (c) => [
@@ -3103,14 +3076,14 @@ async function volcarFilasSheet(sheetId, tabName, v, cads, visitaId) {
     c.utmX||'',                         // UTM X
     c.utmY||'',                         // UTM Y
     c.aerogenerador||'',                // Aerogenerador
-    c.distancia||'',                    // Distancia Aerog.
+    distanciaNum(c.distancia),          // Distancia Aerog. (sin "m")
     c.direccion_aero||'',              // Dirección Aerog.
     c.especie_comun||'',               // Especie
     c.especie_cientifico||'',          // Nombre Científico
     c.diagnostico||'',                 // Causa Probable
     c.tamano||'',                      // Tamaño
     mesNum,                            // Mes (número)
-    v.frecuencia||'',                  // Frecuencia
+    '',                                // Frecuencia (vacío)
     '',                                // Tamaño/frecuencia (vacío)
     anio,                              // Año
     c.sexo||'',                        // Sexo
@@ -3123,8 +3096,8 @@ async function volcarFilasSheet(sheetId, tabName, v, cads, visitaId) {
     c.estado_descomposicion||'',       // Estado Descomposición
     c.actuaciones||'',                 // Actuaciones
     (c.fotos && c.fotos.length > 0) ? 'Sí' : 'No', // Imagen
-    c.lat||'',                         // Lat WGS84
-    c.lon||'',                         // Lon WGS84
+    coordComa(c.lat),                  // Lat WGS84 (coma decimal)
+    coordComa(c.lon),                  // Lon WGS84 (coma decimal)
   ];
   const filasNuevas = cads.length ? cads.map(c => fila(c)) : [fila({})];
 

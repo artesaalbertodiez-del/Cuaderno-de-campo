@@ -246,6 +246,24 @@ input[type="file"] { display: none; }
 /* ── MENÚ RENOVADO ── */
 .menu-section-title { font-size: 11px; color: var(--texto2); text-transform: uppercase; letter-spacing: .08em; font-weight: 700; margin: 18px 0 8px; padding-left: 2px; }
 .menu-section-title:first-child { margin-top: 0; }
+
+/* ── CENSOS ── */
+#pantalla-censos-menu, #pantalla-censos-form { display: none; max-width: 640px; margin: 0 auto; padding: 16px; padding-bottom: 100px; }
+.punto-card { background: white; border: 1px solid var(--borde); border-radius: 10px; margin-bottom: 12px; overflow: hidden; box-shadow: var(--sombra); border-left: 5px solid var(--azul); }
+.punto-card.activo { border-left-color: var(--verde); }
+.punto-card.completado { border-left-color: #9e9e9e; opacity: 0.75; }
+.punto-cab { background: var(--azul-claro); padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
+.punto-cab.completado { background: #f5f5f5; }
+.punto-num { font-weight: 700; font-size: 14px; color: var(--azul); }
+.punto-hora { font-size: 12px; color: var(--texto2); }
+.punto-body { padding: 14px; border-top: 1px solid var(--borde); }
+.obs-card { background: var(--azul-claro); border: 1px solid #90caf9; border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; }
+.obs-especie { font-size: 13px; font-weight: 600; }
+.obs-meta { font-size: 11px; color: var(--texto2); margin-top: 2px; }
+.add-obs { border: 2px dashed #90caf9; border-radius: 8px; padding: 12px; text-align: center; color: var(--azul); cursor: pointer; font-size: 13px; background: white; transition: all .2s; margin-top: 8px; }
+.add-obs:hover { background: var(--azul-claro); }
+.obs-form { background: #f8f9fa; border: 1px solid var(--borde); border-radius: 8px; padding: 14px; margin-top: 8px; }
+.censos-barra { background: white; border-top: 1px solid var(--borde); padding: 12px 16px; display: flex; gap: 8px; flex-wrap: wrap; position: fixed; bottom: 0; left: 0; right: 0; z-index: 200; box-shadow: 0 -2px 8px rgba(0,0,0,.1); }
 </style>
 </head>
 <body>
@@ -368,6 +386,10 @@ input[type="file"] { display: none; }
     <div class="ajuste-fila">
       <label>Nombre de pestaña</label>
       <input type="text" id="aj-sheet-tab" placeholder="Mortandad" oninput="guardarAjustes()">
+    </div>
+    <div class="ajuste-fila">
+      <label>ID Sheet Censos</label>
+      <input type="text" id="aj-sheet-censos" placeholder="1ABC…xyz" oninput="guardarAjustes()">
     </div>
   </div>
   <div class="ajuste-seccion">
@@ -523,6 +545,102 @@ input[type="file"] { display: none; }
   <button class="btn-g" style="background:#fff3e0;color:#e65100;border:1px solid #ffccbc" onclick="cerrarVisita()">✅ Cerrar visita</button>
   <button class="btn-g" onclick="limpiar()" style="margin-left:auto">🗑</button>
 </div>
+</div>
+
+<!-- CENSOS — MENÚ -->
+<div id="pantalla-censos-menu">
+  <div class="seccion">
+    <div class="sec-cab">Datos generales de la visita</div>
+    <div class="sec-body">
+      <div class="fila f2">
+        <div class="campo">
+          <label>Parque eólico</label>
+          <select id="c-parque" onchange="censosActualizarMunicipio()">
+            <option value="">— Seleccionar —</option>
+            <option value="CE">Caramonte</option>
+            <option value="AL">Alentisque</option>
+            <option value="PA">Parideras</option>
+            <option value="CA">Carrascalejo</option>
+            <option value="GUI">El Guijo</option>
+          </select>
+        </div>
+        <div class="campo">
+          <label>Término municipal</label>
+          <input type="text" id="c-municipio" placeholder="Ej. Medinaceli">
+        </div>
+      </div>
+      <div class="fila f2">
+        <div class="campo">
+          <label>Fecha</label>
+          <input type="date" id="c-fecha">
+        </div>
+        <div class="campo">
+          <label>Observador</label>
+          <input type="text" id="c-observador" placeholder="Nombre del observador">
+        </div>
+      </div>
+      <div class="fila f2">
+        <div class="campo"><label>Hora de inicio</label><input type="time" id="c-hora-inicio"></div>
+        <div class="campo"><label>Hora de fin</label><input type="time" id="c-hora-fin"></div>
+      </div>
+    </div>
+  </div>
+  <div class="seccion">
+    <div class="sec-cab gris">Tiempo atmosférico</div>
+    <div class="sec-body">
+      <div class="fila f2">
+        <div class="campo"><label>Temperatura</label>
+          <select id="c-temperatura"><option value="">—</option>
+            <option>Muy fría (&lt;0°C)</option><option>Fría (0-10°C)</option>
+            <option>Fresca (10-15°C)</option><option>Templada (15-20°C)</option>
+            <option>Cálida (20-30°C)</option><option>Muy cálida (&gt;30°C)</option>
+          </select>
+        </div>
+        <div class="campo"><label>Visibilidad</label>
+          <select id="c-visibilidad"><option value="">—</option>
+            <option>Buena</option><option>Regular</option><option>Mala</option>
+          </select>
+        </div>
+        <div class="campo"><label>Dirección del viento</label>
+          <select id="c-viento-dir"><option value="">—</option>
+            <option>Norte</option><option>Noreste</option><option>Este</option>
+            <option>Sureste</option><option>Sur</option><option>Suroeste</option>
+            <option>Oeste</option><option>Noroeste</option><option>Variable</option><option>Calma</option>
+          </select>
+        </div>
+        <div class="campo"><label>Velocidad del viento</label>
+          <select id="c-viento-vel"><option value="">—</option>
+            <option>Calma</option><option>Viento flojo</option>
+            <option>Viento medio</option><option>Viento fuerte</option><option>Vendaval</option>
+          </select>
+        </div>
+        <div class="campo"><label>Precipitación</label>
+          <select id="c-precipitacion"><option value="">—</option>
+            <option>Nula</option><option>Llovizna</option>
+            <option>Lluvia</option><option>Lluvia intensa</option><option>Nieve</option>
+          </select>
+        </div>
+        <div class="campo"><label>Nubosidad</label>
+          <select id="c-nubosidad"><option value="">—</option>
+            <option>Despejado</option><option>Poco nuboso</option>
+            <option>Nuboso</option><option>Cubierto</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div style="display:flex;gap:8px;margin-top:8px">
+    <button class="btn-v" style="flex:1" onclick="censosIniciarPuntos()">▶ Iniciar puntos de censo</button>
+  </div>
+</div>
+
+<!-- CENSOS — FORMULARIO DE PUNTOS -->
+<div id="pantalla-censos-form">
+  <div id="censos-puntos-lista"></div>
+  <div class="censos-barra">
+    <button class="btn-v" onclick="censosSincronizar()">☁ Sincronizar censos</button>
+    <button class="btn-g" onclick="censosVolver()" style="margin-left:auto">← Volver</button>
+  </div>
 </div>
 
 <!-- PREVISUALIZACIÓN -->
@@ -745,7 +863,7 @@ let moduloActivo = null; // 'mortandad' | 'censos'
 // ══════════════════════════════════════════════
 // NAVEGACIÓN
 // ══════════════════════════════════════════════
-const PANTALLAS = ['pantalla-inicio','pantalla-menu','pantalla-form','pantalla-historial','pantalla-sync','pantalla-ajustes'];
+const PANTALLAS = ['pantalla-inicio','pantalla-menu','pantalla-form','pantalla-historial','pantalla-sync','pantalla-ajustes','pantalla-censos-menu','pantalla-censos-form'];
 
 function mostrarPantalla(id) {
   PANTALLAS.forEach(p => {
@@ -772,6 +890,8 @@ function mostrarPantalla(id) {
     'pantalla-form':      ['Registro de Visita', 'Mortandad de Fauna'],
     'pantalla-historial': ['Historial', 'Mortandad de Fauna'],
     'pantalla-sync':      ['Sincronizar', 'Google Drive · Sheets'],
+    'pantalla-censos-menu': ['Censos de Aves', 'Nueva visita'],
+    'pantalla-censos-form': ['Censos de Aves', 'Puntos de muestreo'],
     'pantalla-ajustes':   ['Ajustes', 'Cuaderno de Campo'],
   };
   const [t, s] = titulos[id] || ['Seguimiento Ambiental', 'ENGIE Wind Farms'];
@@ -780,7 +900,7 @@ function mostrarPantalla(id) {
 }
 
 function abrirModulo(modulo) {
-  if (modulo === 'censos') { toast('Censos — próximamente disponible'); return; }
+  if (modulo === 'censos') { censosAbrirMenu(); return; }
   moduloActivo = modulo;
   mostrarPantalla('pantalla-menu');
   actualizarMenuContadores();
@@ -837,6 +957,7 @@ function abrirAjustes() {
   document.getElementById('aj-drive-carpeta').value = aj.driveCarpeta || 'Mortandad ENGIE';
   document.getElementById('aj-sheet-id').value = aj.sheetId || '';
   document.getElementById('aj-sheet-tab').value = aj.sheetTab || 'Mortandad';
+  document.getElementById('aj-sheet-censos').value = aj.sheetIdCensos || '';
   mostrarPantalla('pantalla-ajustes');
 }
 
@@ -1633,6 +1754,7 @@ function guardarAjustes() {
     driveCarpeta: document.getElementById('aj-drive-carpeta')?.value || 'Mortandad ENGIE',
     sheetId: document.getElementById('aj-sheet-id')?.value || '',
     sheetTab: document.getElementById('aj-sheet-tab')?.value || 'Mortandad',
+    sheetIdCensos: document.getElementById('aj-sheet-censos')?.value || '',
   }));
   toast('✓ Ajustes guardados');
 }
@@ -3477,6 +3599,422 @@ function toast(msg) {
   const t=document.getElementById('toast');
   t.textContent=msg; t.classList.add('vis');
   setTimeout(()=>t.classList.remove('vis'),3000);
+}
+
+// ══════════════════════════════════════════════
+// MÓDULO CENSOS DE AVES
+// ══════════════════════════════════════════════
+
+// Puntos de muestreo por parque
+const PUNTOS_CENSO = {
+  CE:  Array.from({length:7},  (_,i) => i+1),
+  AL:  Array.from({length:16}, (_,i) => i+1),
+  PA:  Array.from({length:6},  (_,i) => i+1),
+  CA:  Array.from({length:15}, (_,i) => i+1),
+  GUI: Array.from({length:10}, (_,i) => i+1),
+};
+
+// Códigos de campos numéricos
+const CENSO_DISTANCIA = { '1': '>25 m', '2': '25-50 m', '3': '>100 m' };
+const CENSO_SEXO      = { '1': 'Macho', '2': 'Hembra', '3': 'Indeterminado' };
+const CENSO_EDAD      = { '3': 'Juvenil', '4': 'Adulto', '0': 'Indeterminado' };
+const CENSO_VUELO     = { '1': 'Posado', '2': 'Saltando', '3': 'Vuelo lineal', '4': 'Cicleo' };
+const CENSO_ALTURA    = { '1': 'Posado', '2': 'Debajo altura colisión', '3': 'Altura colisión', '4': 'Por encima altura colisión' };
+
+// Estado del módulo censos
+let censosVisitaId = null;
+let censosPuntos = []; // [{num, horaInicio, observaciones:[{...}]}]
+
+// Especies solo aves (sin murciélagos)
+const ESPECIES_AVES = ESPECIES.filter(([c]) => !c.toLowerCase().includes('murciélago') && !c.toLowerCase().includes('nóctulo') && !c.toLowerCase().includes('orejudo') && !c.toLowerCase().includes('pipistrellus') && !c.toLowerCase().includes('quiróptero') && !c.toLowerCase().includes('barbastela') && !c.toLowerCase().includes('hypsugo'));
+
+function censosAbrirMenu() {
+  censosVisitaId = 'censo_' + Date.now();
+  censosPuntos = [];
+  // Rellenar con ajustes por defecto
+  const aj = getAjustes();
+  document.getElementById('c-fecha').value = new Date().toISOString().split('T')[0];
+  if (aj.observador) document.getElementById('c-observador').value = aj.observador;
+  mostrarPantalla('pantalla-censos-menu');
+}
+
+function censosActualizarMunicipio() {
+  const p = document.getElementById('c-parque').value;
+  const info = PARQUES[p];
+  if (info) document.getElementById('c-municipio').value = info.municipio || '';
+}
+
+function censosGetDatosVisita() {
+  return {
+    parque:       document.getElementById('c-parque').value,
+    municipio:    document.getElementById('c-municipio').value,
+    fecha:        document.getElementById('c-fecha').value,
+    observador:   document.getElementById('c-observador').value,
+    hora_inicio:  document.getElementById('c-hora-inicio').value,
+    hora_fin:     document.getElementById('c-hora-fin').value,
+    temperatura:  document.getElementById('c-temperatura').value,
+    visibilidad:  document.getElementById('c-visibilidad').value,
+    viento_dir:   document.getElementById('c-viento-dir').value,
+    viento_vel:   document.getElementById('c-viento-vel').value,
+    precipitacion:document.getElementById('c-precipitacion').value,
+    nubosidad:    document.getElementById('c-nubosidad').value,
+  };
+}
+
+function censosIniciarPuntos() {
+  const v = censosGetDatosVisita();
+  if (!v.parque) { toast('Selecciona un parque'); return; }
+  if (!v.fecha)  { toast('Introduce la fecha'); return; }
+
+  const nums = PUNTOS_CENSO[v.parque] || [];
+  censosPuntos = nums.map(n => ({ num: n, horaInicio: '', observaciones: [] }));
+  censosRenderPuntos();
+  mostrarPantalla('pantalla-censos-form');
+}
+
+function censosVolver() {
+  mostrarPantalla('pantalla-censos-menu');
+}
+
+function censosRenderPuntos() {
+  const cont = document.getElementById('censos-puntos-lista');
+  cont.innerHTML = censosPuntos.map(p => censosRenderPunto(p)).join('');
+}
+
+function censosRenderPunto(p) {
+  const nObs = p.observaciones.length;
+  const completado = nObs > 0 && p.horaInicio;
+  const estadoClass = completado ? 'completado' : (p.horaInicio ? 'activo' : '');
+
+  const obsHtml = p.observaciones.map((o, oi) => `
+    <div class="obs-card">
+      <div>
+        <div class="obs-especie">${o.especie_comun || '—'}${o.especie_cientifico ? ` <em style="font-weight:400;font-size:11px">(${o.especie_cientifico})</em>` : ''}</div>
+        <div class="obs-meta">Nº: ${o.n_individuos||'—'} · Dist: ${CENSO_DISTANCIA[o.distancia]||'—'} · ${CENSO_VUELO[o.tipo_vuelo]||'—'} · ${CENSO_ALTURA[o.altura_vuelo]||'—'}</div>
+      </div>
+      <button class="btn-r" onclick="censosEliminarObs(${p.num},${oi})">✕</button>
+    </div>`).join('');
+
+  return `
+  <div class="punto-card ${estadoClass}" id="punto-card-${p.num}">
+    <div class="punto-cab ${completado?'completado':''}" onclick="censosTogglePunto(${p.num})">
+      <span class="punto-num">Punto ${p.num}</span>
+      <div style="display:flex;align-items:center;gap:8px">
+        ${p.horaInicio ? `<span class="punto-hora">⏱ ${p.horaInicio}</span>` : ''}
+        ${nObs > 0 ? `<span class="badge" style="background:var(--azul);color:white">${nObs}</span>` : ''}
+        <span style="color:var(--texto2);font-size:18px">›</span>
+      </div>
+    </div>
+    <div class="punto-body" id="punto-body-${p.num}" style="display:none">
+      <div class="fila f2" style="margin-bottom:12px">
+        <div class="campo">
+          <label>Hora inicio punto</label>
+          <input type="time" value="${p.horaInicio||''}" onchange="censosSetHora(${p.num},this.value)">
+        </div>
+      </div>
+      ${obsHtml}
+      <div class="add-obs" onclick="censosAbrirFormObs(${p.num})">+ Añadir observación de especie</div>
+      <div class="obs-form" id="obs-form-${p.num}" style="display:none"></div>
+    </div>
+  </div>`;
+}
+
+function censosTogglePunto(num) {
+  const body = document.getElementById(`punto-body-${num}`);
+  if (!body) return;
+  const visible = body.style.display !== 'none';
+  // Cerrar todos
+  censosPuntos.forEach(p => {
+    const b = document.getElementById(`punto-body-${p.num}`);
+    if (b) b.style.display = 'none';
+  });
+  if (!visible) body.style.display = 'block';
+}
+
+function censosSetHora(num, valor) {
+  const p = censosPuntos.find(x => x.num === num);
+  if (p) p.horaInicio = valor;
+  // Actualizar clase sin re-render completo
+  const card = document.getElementById(`punto-card-${num}`);
+  if (card && valor) card.className = 'punto-card activo';
+}
+
+function censosAbrirFormObs(num) {
+  const formEl = document.getElementById(`obs-form-${num}`);
+  if (!formEl) return;
+  formEl.style.display = 'block';
+
+  const especiesOptions = ESPECIES_AVES.map(([c,s]) =>
+    `<option value="${c}" data-sci="${s}">${c}</option>`).join('');
+
+  formEl.innerHTML = `
+    <div class="fila f2" style="margin-bottom:10px">
+      <div class="campo" style="grid-column:span 2">
+        <label>Especie</label>
+        <select id="obs-especie-${num}" onchange="censosAutoSci(${num})">
+          <option value="">— Seleccionar —</option>
+          ${especiesOptions}
+        </select>
+      </div>
+      <div class="campo" style="grid-column:span 2">
+        <label>Nombre científico</label>
+        <input type="text" id="obs-sci-${num}" placeholder="Se rellena automáticamente" style="font-style:italic">
+      </div>
+    </div>
+    <div class="fila f2" style="margin-bottom:10px">
+      <div class="campo">
+        <label>Nº individuos</label>
+        <input type="number" id="obs-n-${num}" min="1" placeholder="1">
+      </div>
+      <div class="campo">
+        <label>Tipo observación</label>
+        <select id="obs-tipo-${num}">
+          <option value="">—</option>
+          <option value="Vista">Vista</option>
+          <option value="Oída">Oída</option>
+        </select>
+      </div>
+      <div class="campo">
+        <label>Distancia al punto</label>
+        <select id="obs-dist-${num}">
+          <option value="">—</option>
+          <option value="1">1 — &lt;25 m</option>
+          <option value="2">2 — 25-50 m</option>
+          <option value="3">3 — &gt;100 m</option>
+        </select>
+      </div>
+      <div class="campo">
+        <label>Sexo</label>
+        <select id="obs-sexo-${num}">
+          <option value="">—</option>
+          <option value="1">1 — Macho</option>
+          <option value="2">2 — Hembra</option>
+          <option value="3">3 — Indeterminado</option>
+        </select>
+      </div>
+      <div class="campo">
+        <label>Edad</label>
+        <select id="obs-edad-${num}">
+          <option value="">—</option>
+          <option value="3">3 — Juvenil</option>
+          <option value="4">4 — Adulto</option>
+          <option value="0">0 — Indeterminado</option>
+        </select>
+      </div>
+      <div class="campo">
+        <label>Tipo de vuelo</label>
+        <select id="obs-vuelo-${num}">
+          <option value="">—</option>
+          <option value="1">1 — Posado</option>
+          <option value="2">2 — Saltando</option>
+          <option value="3">3 — Vuelo lineal</option>
+          <option value="4">4 — Cicleo</option>
+        </select>
+      </div>
+      <div class="campo">
+        <label>Altura de vuelo</label>
+        <select id="obs-altura-${num}">
+          <option value="">—</option>
+          <option value="1">1 — Posado</option>
+          <option value="2">2 — Debajo altura colisión</option>
+          <option value="3">3 — Altura colisión</option>
+          <option value="4">4 — Por encima altura colisión</option>
+        </select>
+      </div>
+    </div>
+    <div class="campo" style="margin-bottom:10px">
+      <label>Observaciones</label>
+      <input type="text" id="obs-obs-${num}" placeholder="Observaciones opcionales">
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn-v btn-sm" onclick="censosGuardarObs(${num})">✓ Añadir</button>
+      <button class="btn-g btn-sm" onclick="censosCerrarFormObs(${num})">Cancelar</button>
+    </div>`;
+}
+
+function censosAutoSci(num) {
+  const sel = document.getElementById(`obs-especie-${num}`);
+  const opt = sel?.options[sel.selectedIndex];
+  const sci = opt?.getAttribute('data-sci') || '';
+  const el = document.getElementById(`obs-sci-${num}`);
+  if (el) el.value = sci;
+}
+
+function censosCerrarFormObs(num) {
+  const formEl = document.getElementById(`obs-form-${num}`);
+  if (formEl) formEl.style.display = 'none';
+}
+
+function censosGuardarObs(num) {
+  const especie = document.getElementById(`obs-especie-${num}`)?.value;
+  if (!especie) { toast('Selecciona una especie'); return; }
+
+  const obs = {
+    especie_comun:     especie,
+    especie_cientifico:document.getElementById(`obs-sci-${num}`)?.value || '',
+    n_individuos:      document.getElementById(`obs-n-${num}`)?.value || '',
+    tipo_observacion:  document.getElementById(`obs-tipo-${num}`)?.value || '',
+    distancia:         document.getElementById(`obs-dist-${num}`)?.value || '',
+    sexo:              document.getElementById(`obs-sexo-${num}`)?.value || '',
+    edad:              document.getElementById(`obs-edad-${num}`)?.value || '',
+    tipo_vuelo:        document.getElementById(`obs-vuelo-${num}`)?.value || '',
+    altura_vuelo:      document.getElementById(`obs-altura-${num}`)?.value || '',
+    observaciones:     document.getElementById(`obs-obs-${num}`)?.value || '',
+  };
+
+  const p = censosPuntos.find(x => x.num === num);
+  if (p) p.observaciones.push(obs);
+
+  toast(`✓ Observación añadida (${especie})`);
+  censosRenderPuntos();
+  // Reabrir el punto
+  setTimeout(() => {
+    censosTogglePunto(num);
+    const body = document.getElementById(`punto-body-${num}`);
+    if (body) body.style.display = 'block';
+  }, 50);
+}
+
+function censosEliminarObs(num, oi) {
+  if (!confirm('¿Eliminar esta observación?')) return;
+  const p = censosPuntos.find(x => x.num === num);
+  if (p) p.observaciones.splice(oi, 1);
+  censosRenderPuntos();
+  setTimeout(() => {
+    censosTogglePunto(num);
+    const body = document.getElementById(`punto-body-${num}`);
+    if (body) body.style.display = 'block';
+  }, 50);
+}
+
+async function censosSincronizar() {
+  if (!gAccessToken) {
+    toast('Conecta primero con Google en la pantalla Sincronizar');
+    return;
+  }
+  const v = censosGetDatosVisita();
+  if (!v.parque || !v.fecha) { toast('Completa los datos generales de la visita'); return; }
+
+  const aj = getAjustes();
+  const sheetIdCensos = aj.sheetIdCensos;
+  if (!sheetIdCensos) {
+    toast('Configura el ID del Sheet de censos en Ajustes');
+    return;
+  }
+  const tabVisita = 'Datos visita';
+  const tabCensos = 'Censos';
+
+  toast('Sincronizando censos…');
+
+  try {
+    // ── Cabeceras Datos visita ──
+    await censosAsegurarCabeceras(sheetIdCensos, tabVisita, [
+      'ID_Visita','Parque','Municipio','Fecha','Hora Inicio','Hora Fin','Observador',
+      'Temperatura','Visibilidad','Dirección Viento','Velocidad Viento','Precipitación','Nubosidad'
+    ]);
+
+    // ── Cabeceras Censos ──
+    await censosAsegurarCabeceras(sheetIdCensos, tabCensos, [
+      'ID_Visita','Parque','Municipio','Fecha','Hora Inicio Visita','Hora Fin Visita','Observador',
+      'Temperatura','Visibilidad','Dirección Viento','Velocidad Viento','Precipitación','Nubosidad',
+      'Punto','Hora Inicio Punto',
+      'Especie','Nombre Científico','Nº Individuos','Distancia','Sexo','Edad',
+      'Tipo Vuelo','Altura Vuelo','Tipo Observación','Observaciones'
+    ]);
+
+    const pInfo = PARQUES[v.parque] || {};
+    const pNombre = pInfo.nombre || v.parque || '';
+
+    // ── Upsert Datos visita ──
+    const filaVisita = [
+      censosVisitaId, pNombre, v.municipio, v.fecha,
+      v.hora_inicio, v.hora_fin, v.observador,
+      v.temperatura, v.visibilidad, v.viento_dir, v.viento_vel, v.precipitacion, v.nubosidad
+    ];
+    await censosUpsertSheet(sheetIdCensos, tabVisita, censosVisitaId, [filaVisita]);
+
+    // ── Upsert Censos (una fila por observación) ──
+    const filasCensos = [];
+    censosPuntos.forEach(p => {
+      if (p.observaciones.length === 0) return;
+      p.observaciones.forEach(o => {
+        filasCensos.push([
+          censosVisitaId, pNombre, v.municipio, v.fecha,
+          v.hora_inicio, v.hora_fin, v.observador,
+          v.temperatura, v.visibilidad, v.viento_dir, v.viento_vel, v.precipitacion, v.nubosidad,
+          p.num, p.horaInicio,
+          o.especie_comun, o.especie_cientifico, o.n_individuos,
+          o.distancia, o.sexo, o.edad,
+          o.tipo_vuelo, o.altura_vuelo, o.tipo_observacion, o.observaciones
+        ]);
+      });
+    });
+
+    if (filasCensos.length > 0) {
+      await censosUpsertSheet(sheetIdCensos, tabCensos, censosVisitaId, filasCensos);
+    }
+
+    toast('✅ Censos sincronizados correctamente');
+  } catch(e) {
+    toast('❌ Error: ' + e.message);
+  }
+}
+
+async function censosAsegurarCabeceras(sheetId, tabName, cabeceras) {
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(tabName)}!A1:Z1`;
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${gAccessToken}` } });
+  if (!res.ok) return;
+  const data = await res.json();
+  if ((data.values?.[0] || []).length > 0) return;
+  await fetch(
+    `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(tabName)}!A1:append?valueInputOption=RAW`,
+    { method:'POST', headers:{ Authorization:`Bearer ${gAccessToken}`,'Content-Type':'application/json' },
+      body: JSON.stringify({ values: [cabeceras] }) }
+  );
+}
+
+async function censosUpsertSheet(sheetId, tabName, visitaId, filasNuevas) {
+  const tabEnc = encodeURIComponent(tabName);
+
+  // Leer filas actuales
+  const resLeer = await fetch(
+    `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${tabEnc}`,
+    { headers: { Authorization: `Bearer ${gAccessToken}` } }
+  );
+  if (!resLeer.ok) throw new Error(`No se pudo leer ${tabName}: HTTP ${resLeer.status}`);
+  const datos = await resLeer.json();
+  const filas = datos.values || [];
+
+  // Encontrar y borrar filas con este ID_Visita (col A)
+  const indicesABorrar = [];
+  for (let i = 1; i < filas.length; i++) {
+    if (filas[i][0] === visitaId) indicesABorrar.push(i);
+  }
+
+  if (indicesABorrar.length > 0) {
+    const resMeta = await fetch(
+      `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}?fields=sheets(properties(sheetId,title))`,
+      { headers: { Authorization: `Bearer ${gAccessToken}` } }
+    );
+    const meta = await resMeta.json();
+    const sheetTab = meta.sheets?.find(s => s.properties.title === tabName);
+    const sheetGid = sheetTab?.properties?.sheetId ?? 0;
+    const requests = indicesABorrar.slice().reverse().map(rowIdx => ({
+      deleteDimension: { range: { sheetId: sheetGid, dimension: 'ROWS', startIndex: rowIdx, endIndex: rowIdx+1 } }
+    }));
+    await fetch(
+      `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}:batchUpdate`,
+      { method:'POST', headers:{ Authorization:`Bearer ${gAccessToken}`,'Content-Type':'application/json' },
+        body: JSON.stringify({ requests }) }
+    );
+  }
+
+  // Añadir filas nuevas
+  await fetch(
+    `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(tabName)}!A1:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS`,
+    { method:'POST', headers:{ Authorization:`Bearer ${gAccessToken}`,'Content-Type':'application/json' },
+      body: JSON.stringify({ values: filasNuevas }) }
+  );
 }
 
 // ══════════════════════════════════════════════

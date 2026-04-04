@@ -3961,14 +3961,34 @@ async function censosSincronizar() {
 }
 
 async function censosAsegurarCabeceras(sheetId, tabName, cabeceras) {
+  // Intentar leer la pestaña
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(tabName)}!A1:Z1`;
   const res = await fetch(url, { headers: { Authorization: `Bearer ${gAccessToken}` } });
-  if (!res.ok) return;
-  const data = await res.json();
-  if ((data.values?.[0] || []).length > 0) return;
+
+  if (!res.ok) {
+    // Pestaña no existe — crearla primero
+    if (res.status === 400) {
+      await fetch(
+        `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}:batchUpdate`,
+        {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${gAccessToken}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ requests: [{ addSheet: { properties: { title: tabName } } }] })
+        }
+      );
+    } else {
+      throw new Error(`No se pudo acceder a ${tabName}: HTTP ${res.status}`);
+    }
+  } else {
+    // Pestaña existe — comprobar si ya tiene cabeceras
+    const data = await res.json();
+    if ((data.values?.[0] || []).length > 0) return;
+  }
+
+  // Insertar cabeceras
   await fetch(
     `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(tabName)}!A1:append?valueInputOption=RAW`,
-    { method:'POST', headers:{ Authorization:`Bearer ${gAccessToken}`,'Content-Type':'application/json' },
+    { method: 'POST', headers: { Authorization: `Bearer ${gAccessToken}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ values: [cabeceras] }) }
   );
 }
@@ -3976,14 +3996,19 @@ async function censosAsegurarCabeceras(sheetId, tabName, cabeceras) {
 async function censosUpsertSheet(sheetId, tabName, visitaId, filasNuevas) {
   const tabEnc = encodeURIComponent(tabName);
 
-  // Leer filas actuales
+  // Leer filas actuales — puede estar vacía si recién creada
+  let filas = [];
   const resLeer = await fetch(
     `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${tabEnc}`,
     { headers: { Authorization: `Bearer ${gAccessToken}` } }
   );
-  if (!resLeer.ok) throw new Error(`No se pudo leer ${tabName}: HTTP ${resLeer.status}`);
-  const datos = await resLeer.json();
-  const filas = datos.values || [];
+  if (!resLeer.ok && resLeer.status !== 400) {
+    throw new Error(`No se pudo leer ${tabName}: HTTP ${resLeer.status}`);
+  }
+  if (resLeer.ok) {
+    const datos = await resLeer.json();
+    filas = datos.values || [];
+  }
 
   // Encontrar y borrar filas con este ID_Visita (col A)
   const indicesABorrar = [];
@@ -4010,11 +4035,15 @@ async function censosUpsertSheet(sheetId, tabName, visitaId, filasNuevas) {
   }
 
   // Añadir filas nuevas
-  await fetch(
+  const resAppend = await fetch(
     `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(tabName)}!A1:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS`,
     { method:'POST', headers:{ Authorization:`Bearer ${gAccessToken}`,'Content-Type':'application/json' },
       body: JSON.stringify({ values: filasNuevas }) }
   );
+  if (!resAppend.ok) {
+    const err = await resAppend.json().catch(() => ({}));
+    throw new Error(err?.error?.message || `HTTP ${resAppend.status}`);
+  }
 }
 
 // ══════════════════════════════════════════════

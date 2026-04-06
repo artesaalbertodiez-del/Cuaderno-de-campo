@@ -1783,50 +1783,32 @@ function cargarFotos(id, input) {
   if (!files.length) { toast('No se seleccionaron archivos'); return; }
 
   files.forEach(f => {
-    const isHeic = f.type === 'image/heic' || f.type === 'image/heif' || f.name.match(/\.(heic|heif)$/i);
-
-    if (isHeic) {
-      // HEIC: usar createObjectURL + Image + canvas para convertir
-      const url = URL.createObjectURL(f);
-      const img = new Image();
-      img.onload = () => {
+    // Usar siempre createObjectURL + Image + canvas
+    // Es el método más compatible con Safari iOS (fototeca, Drive, etc.)
+    const url = URL.createObjectURL(f);
+    const img = new Image();
+    img.onload = () => {
+      try {
         const canvas = document.createElement('canvas');
-        canvas.width = img.naturalWidth;
-        canvas.height = img.naturalHeight;
-        canvas.getContext('2d').drawImage(img, 0, 0);
-        const dataURL = canvas.toDataURL('image/jpeg', 0.85);
+        // Redimensionar si es muy grande (max 1920px) para no saturar localStorage
+        const maxW = 1920;
+        let w = img.naturalWidth, h = img.naturalHeight;
+        if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; }
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        const dataURL = canvas.toDataURL('image/jpeg', 0.82);
         URL.revokeObjectURL(url);
         addFoto(id, dataURL);
-      };
-      img.onerror = () => { URL.revokeObjectURL(url); toast(`⚠ No se pudo convertir HEIC: ${f.name}`); };
-      img.src = url;
-      return;
-    }
-
-    // Para el resto usar FileReader
-    const r = new FileReader();
-    r.onload = e => {
-      const result = e.target.result;
-      if (!result || result.length < 100) { toast(`⚠ No se pudo leer: ${f.name}`); return; }
-      const dataURL = result.startsWith('data:image') ? result : result.replace(/^data:[^;]+/, 'data:image/jpeg');
-      addFoto(id, dataURL);
-    };
-    r.onerror = () => {
-      // Fallback: ObjectURL + canvas
-      const url = URL.createObjectURL(f);
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        canvas.width = img.naturalWidth;
-        canvas.height = img.naturalHeight;
-        canvas.getContext('2d').drawImage(img, 0, 0);
-        addFoto(id, canvas.toDataURL('image/jpeg', 0.85));
+      } catch(e) {
         URL.revokeObjectURL(url);
-      };
-      img.onerror = () => { URL.revokeObjectURL(url); toast(`⚠ Error al cargar: ${f.name}`); };
-      img.src = url;
+        toast(`⚠ Error al procesar: ${f.name}`);
+      }
     };
-    r.readAsDataURL(f);
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      toast(`⚠ No se pudo cargar: ${f.name}`);
+    };
+    img.src = url;
   });
   input.value = '';
 }

@@ -917,7 +917,8 @@ function mostrarPantalla(id) {
   const enInicio = id === 'pantalla-inicio';
   const enMenu = id === 'pantalla-menu';
   const enCensosMenu = id === 'pantalla-censos-menu';
-  const enMenuCualquiera = enMenu || enCensosMenu;
+  const enAjustes = id === 'pantalla-ajustes';
+  const enMenuCualquiera = enMenu || enCensosMenu || enAjustes;
 
   // Cabecera acciones
   document.getElementById('cab-acc').style.display = enInicio ? 'none' : 'flex';
@@ -3018,6 +3019,7 @@ async function generarDocx(v, cads) {
 
     // Fotografías — alto fijo 9,5cm (~359px a 96dpi), ancho proporcional
     const fotosList = (cd.fotos || []).slice(0, 2);
+    toast(`Cadáver ${cd.num}: ${fotosList.length} foto(s) encontrada(s)`);
     const fotosCells = await Promise.all(fotosList.map(async (f) => {
       try {
         const base64 = f.includes(',') ? f.split(',')[1] : f;

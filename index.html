@@ -1779,10 +1779,56 @@ function cerrarCamara() {
   document.getElementById('cam-video').srcObject=null;
 }
 function cargarFotos(id, input) {
-  Array.from(input.files).forEach(f => {
-    const r=new FileReader(); r.onload=e=>addFoto(id,e.target.result); r.readAsDataURL(f);
+  const files = Array.from(input.files);
+  if (!files.length) { toast('No se seleccionaron archivos'); return; }
+
+  files.forEach(f => {
+    const isHeic = f.type === 'image/heic' || f.type === 'image/heif' || f.name.match(/\.(heic|heif)$/i);
+
+    if (isHeic) {
+      // HEIC: usar createObjectURL + Image + canvas para convertir
+      const url = URL.createObjectURL(f);
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        canvas.getContext('2d').drawImage(img, 0, 0);
+        const dataURL = canvas.toDataURL('image/jpeg', 0.85);
+        URL.revokeObjectURL(url);
+        addFoto(id, dataURL);
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); toast(`⚠ No se pudo convertir HEIC: ${f.name}`); };
+      img.src = url;
+      return;
+    }
+
+    // Para el resto usar FileReader
+    const r = new FileReader();
+    r.onload = e => {
+      const result = e.target.result;
+      if (!result || result.length < 100) { toast(`⚠ No se pudo leer: ${f.name}`); return; }
+      const dataURL = result.startsWith('data:image') ? result : result.replace(/^data:[^;]+/, 'data:image/jpeg');
+      addFoto(id, dataURL);
+    };
+    r.onerror = () => {
+      // Fallback: ObjectURL + canvas
+      const url = URL.createObjectURL(f);
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        canvas.getContext('2d').drawImage(img, 0, 0);
+        addFoto(id, canvas.toDataURL('image/jpeg', 0.85));
+        URL.revokeObjectURL(url);
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); toast(`⚠ Error al cargar: ${f.name}`); };
+      img.src = url;
+    };
+    r.readAsDataURL(f);
   });
-  input.value='';
+  input.value = '';
 }
 function addFoto(id, dataURL) {
   const cad=cadaveres.find(c=>c.id===id); if(!cad) return;
@@ -3019,7 +3065,6 @@ async function generarDocx(v, cads) {
 
     // Fotografías — alto fijo 9,5cm (~359px a 96dpi), ancho proporcional
     const fotosList = (cd.fotos || []).slice(0, 2);
-    toast(`Cadáver ${cd.num}: ${fotosList.length} foto(s) encontrada(s)`);
     const fotosCells = await Promise.all(fotosList.map(async (f) => {
       try {
         const base64 = f.includes(',') ? f.split(',')[1] : f;

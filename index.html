@@ -1066,9 +1066,9 @@ function actualizarRefCadaver(id) {
   const card = document.querySelector(`.cadaver-card[data-id="${id}"]`);
   const subEl = card?.querySelector('[data-c="subparque_cad"]');
   if (subEl) cad.subparque_cad = subEl.value;
-  cad.referencia = generarRef(cad.num, cad.subparque_cad);
-  const refEl = document.getElementById(`ref-${id}`);
-  if (refEl) refEl.value = cad.referencia;
+
+  // Recalcular referencias de todos los cadáveres para mantener numeración correcta
+  recalcularTodasRefs();
   actualizarInventario();
 }
 
@@ -1308,7 +1308,7 @@ const ESPECIES = [
   ['Quebrantahuesos','Gypaetus barbatus'],
   ['Rabilargo ibérico','Cyanopica cooki'],
   ['Rascón europeo','Rallus aquaticus'],
-  ['Reyezuelo listado','Regulus ignicapillus'],
+  ['Reyezuelo listado','Regulus ignicapilla'],
   ['Reyezuelo sencillo','Regulus regulus'],
   ['Roquero rojo','Monticola saxatilis'],
   ['Roquero solitario','Monticola solitarius'],
@@ -1470,11 +1470,28 @@ function initMapa(id, utmX, utmY) {
 // ══════════════════════════════════════════════
 // CADÁVERES
 // ══════════════════════════════════════════════
+// Recalcula referencias de todos los cadáveres con numeración correcta por subparque
+function recalcularTodasRefs() {
+  const p = document.getElementById('parque')?.value || '';
+  // Contadores por subparque para Guijo, contador único para el resto
+  const contadores = {};
+  cadaveres.forEach((cad, i) => {
+    let clave = p === 'GUI' ? (cad.subparque_cad || 'sin') : 'todos';
+    contadores[clave] = (contadores[clave] || 0) + 1;
+    const numFinal = contadores[clave];
+    cad.num = p === 'GUI' ? numFinal : i + 1;
+    cad.referencia = generarRef(numFinal, cad.subparque_cad);
+    const refEl = document.getElementById(`ref-${cad.id}`);
+    if (refEl) refEl.value = cad.referencia;
+  });
+}
+
 function agregarCadaver() {
   const id = nextId++;
   const num = cadaveres.length + 1;
   cadaveres.push({ id, num, referencia: generarRef(num), fotos:[], lat:'', lon:'', utmX:'', utmY:'' });
   renderCadaveres();
+  recalcularTodasRefs();
   actualizarBadge();
   actualizarInventario();
   setTimeout(() => {
@@ -1486,9 +1503,11 @@ function agregarCadaver() {
 function eliminarCadaver(id) {
   if (!confirm('¿Eliminar este cadáver?')) return;
   cadaveres = cadaveres.filter(c => c.id !== id);
-  cadaveres.forEach((c,i) => { c.num=i+1; c.referencia=generarRef(i+1); });
   nextId = cadaveres.length + 1;
-  renderCadaveres(); actualizarBadge(); actualizarInventario();
+  renderCadaveres();
+  recalcularTodasRefs();
+  actualizarBadge();
+  actualizarInventario();
 }
 
 function actualizarBadge() {
@@ -1783,20 +1802,19 @@ function cargarFotos(id, input) {
   if (!files.length) { toast('No se seleccionaron archivos'); return; }
 
   files.forEach(f => {
-    // Usar siempre createObjectURL + Image + canvas
-    // Es el método más compatible con Safari iOS (fototeca, Drive, etc.)
     const url = URL.createObjectURL(f);
     const img = new Image();
     img.onload = () => {
       try {
         const canvas = document.createElement('canvas');
-        // Redimensionar si es muy grande (max 1920px) para no saturar localStorage
-        const maxW = 1920;
+        // Reducir a máximo 1200px para que quepan en localStorage
+        const maxW = 1200;
         let w = img.naturalWidth, h = img.naturalHeight;
         if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; }
+        if (h > maxW) { w = Math.round(w * maxW / h); h = maxW; }
         canvas.width = w; canvas.height = h;
         canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-        const dataURL = canvas.toDataURL('image/jpeg', 0.82);
+        const dataURL = canvas.toDataURL('image/jpeg', 0.75);
         URL.revokeObjectURL(url);
         addFoto(id, dataURL);
       } catch(e) {
@@ -1902,11 +1920,12 @@ function guardarVisitaActual() {
     }));
     try {
       setVisitas(listaLimpia);
-      if (visitaActivaId) {
-        const curr = listaLimpia.find(v => v.id === visitaActivaId);
-        if (curr) cadaveres.forEach((c, i) => { if (curr.cadaveres[i]) curr.cadaveres[i].fotos = c.fotos; });
-      }
-      toast('⚠ Guardado sin fotos — descarga las fotos antes de cerrar');
+      const d = document.createElement('div');
+      d.style.cssText = 'position:fixed;top:60px;left:12px;right:12px;background:#c62828;color:white;border-radius:8px;padding:14px 16px;font-size:13px;z-index:9999;line-height:1.5';
+      d.innerHTML = '⚠️ <strong>Fotos no guardadas</strong> — Almacenamiento lleno. Sincroniza o elimina visitas antiguas del historial para liberar espacio.';
+      d.onclick = () => d.remove();
+      document.body.appendChild(d);
+      setTimeout(() => d.remove(), 10000);
     } catch(e2) {
       toast('⚠ Error al guardar — almacenamiento lleno');
     }
@@ -2962,7 +2981,7 @@ async function generarDocx(v, cads) {
   const fichasRestos = [];
   for (let ci = 0; ci < cads.length; ci++) {
     const cd = cads[ci];
-    const tiempoStr = cd.tiempo_muerte ? `${cd.tiempo_muerte} días` : '—';
+    const tiempoStr = cd.tiempo_muerte ? `${cd.tiempo_muerte} ${parseFloat(cd.tiempo_muerte) === 1 ? 'día' : 'días'}` : '—';
     const distStr   = cd.distancia    ? `${cd.distancia} metros`    : '—';
 
     // Salto de página antes de cada ficha excepto la primera

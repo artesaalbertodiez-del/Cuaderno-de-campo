@@ -4117,10 +4117,15 @@ async function censosSincronizarUno(id) {
     // Nombre de pestaña por parque
     const tabParque = nombreCorto;
 
-    // Cabeceras Datos visita — nuevo orden
+    // Conversión dirección viento texto → código
+    const dirCode = {'Norte':'N','Noreste':'NE','Este':'E','Sureste':'SE',
+                     'Sur':'S','Suroeste':'SO','Oeste':'O','Noroeste':'NO'};
+    const vientoDirCode = dirCode[v.viento_dir] || '';
+
+    // Cabeceras Datos visita
     await censosAsegurarCabeceras(sheetIdCensos, 'Datos visita', [
       'ID_Visita','Parque','Fecha','Observador',
-      'Dirección Viento','Velocidad Viento','Temperatura','Visibilidad','Nubosidad',
+      'Dirección Viento','Velocidad Viento','Temperatura','Precipitación','Visibilidad','Nubosidad',
       'Hora Inicio','Hora Fin'
     ]);
 
@@ -4131,10 +4136,10 @@ async function censosSincronizarUno(id) {
       'Tipo Vuelo','Altura Vuelo','Observaciones','Tipo Observación'
     ]);
 
-    // Upsert Datos visita — nuevo orden, valores numéricos en meteorología
+    // Upsert Datos visita
     await censosUpsertSheet(sheetIdCensos, 'Datos visita', id, [[
       id, nombreCorto, v.fecha, v.observador,
-      v.viento_dir, v.viento_vel, v.temperatura, v.visibilidad, v.nubosidad,
+      vientoDirCode, v.viento_vel, v.temperatura, v.precipitacion, v.visibilidad, v.nubosidad,
       v.hora_inicio, v.hora_fin
     ]]);
 

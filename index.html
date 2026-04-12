@@ -4419,24 +4419,20 @@ async function censosAsegurarCabeceras(sheetId, tabName, cabeceras) {
         headers: { Authorization: `Bearer ${gAccessToken}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ requests: [{ addSheet: { properties: { title: tabName } } }] })
       });
-      // Esperar un momento para que la API procese la nueva pestaña
       await new Promise(r => setTimeout(r, 800));
     } else {
       throw new Error(`No se pudo acceder a ${tabName}: HTTP ${res.status}`);
     }
-  } else {
-    const data = await res.json();
-    if ((data.values?.[0] || []).length > 0) return; // Ya tiene cabeceras
   }
-  // Insertar cabeceras
-  const resAppend = await fetch(
-    `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(tabName)}!A1:append?valueInputOption=USER_ENTERED`,
-    { method: 'POST', headers: { Authorization: `Bearer ${gAccessToken}`, 'Content-Type': 'application/json' },
+  // Siempre sobreescribir fila 1 con las cabeceras actuales (PUT en A1)
+  const resPut = await fetch(
+    `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(tabName)}!A1?valueInputOption=USER_ENTERED`,
+    { method: 'PUT', headers: { Authorization: `Bearer ${gAccessToken}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ values: [cabeceras] }) }
   );
-  if (!resAppend.ok) {
-    const err = await resAppend.json().catch(() => ({}));
-    throw new Error(`Error al crear cabeceras en ${tabName}: ${err?.error?.message || resAppend.status}`);
+  if (!resPut.ok) {
+    const err = await resPut.json().catch(() => ({}));
+    throw new Error(`Error al escribir cabeceras en ${tabName}: ${err?.error?.message || resPut.status}`);
   }
 }
 

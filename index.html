@@ -1115,6 +1115,11 @@ const ESPECIES = [
   ['Acentor común','Prunella modularis'],
   ['Agateador euroasiático','Certhia familiaris'],
   ['Agateador europeo','Certhia brachydactyla'],
+  ['Aguila calzada','Hieraaetus pennatus'],
+  ['Aguila imperial ibérica','Aquila adalberti'],
+  ['Aguila perdicera','Aquila fasciata'],
+  ['Aguila pescadora','Pandion haliaetus'],
+  ['Aguila real','Aquila chrysaetos'],
   ['Aguilucho cenizo','Circus pygargus'],
   ['Aguilucho lagunero occidental','Circus aeruginosus'],
   ['Aguilucho pálido','Circus cyaneus'],
@@ -1127,10 +1132,17 @@ const ESPECIES = [
   ['Alondra común','Alauda arvensis'],
   ['Alondra ricotí','Chersophilus duponti'],
   ['Alondra totovía','Lullula arborea'],
+  ['Anade azulón','Anas platyrhynchos'],
+  ['Anade friso','Anas strepera'],
+  ['Anade rabudo norteño','Anas acuta'],
   ['Andarríos chico','Actitis hypoleucos'],
   ['Andarríos grande','Tringa ochropus'],
+  ['Ansar común','Anser anser'],
   ['Arrendajo euroasiático','Garrulus glandarius'],
   ['Autillo europeo','Otus scops'],
+  ['Ave grande',''],
+  ['Ave mediana',''],
+  ['Ave pequeña',''],
   ['Avefría europea','Vanellus vanellus'],
   ['Avetorillo común','Ixobrychus minutus'],
   ['Avión común occidental','Delichon urbicum'],
@@ -1182,6 +1194,7 @@ const ESPECIES = [
   ['Codorniz común','Coturnix coturnix'],
   ['Cogujada común','Galerida cristata'],
   ['Cogujada montesina','Galerida theklae'],
+  ['Cogujada sp.',''],
   ['Colirrojo real','Phoenicurus phoenicurus'],
   ['Colirrojo tizón','Phoenicurus ochruros'],
   ['Collalba gris','Oenanthe oenanthe'],
@@ -1240,6 +1253,7 @@ const ESPECIES = [
   ['Halcón peregrino','Falco peregrinus'],
   ['Herrerillo capuchino','Lophophanes cristatus'],
   ['Herrerillo común','Cyanistes caeruleus'],
+  ['Hypsugo/Pipistrellus',''],
   ['Jilguero europeo','Carduelis carduelis'],
   ['Jilguero lúgano','Spinus spinus'],
   ['Lavandera blanca','Motacilla alba'],
@@ -1259,6 +1273,8 @@ const ESPECIES = [
   ['Mosquitero ibérico','Phylloscopus ibericus'],
   ['Mosquitero musical','Phylloscopus trochilus'],
   ['Mosquitero papialbo','Phylloscopus bonelli'],
+  ['Mosquitero sp.','Phylloscopus sp.'],
+  ['Murciélago (sin especificar)',''],
   ['Murciélago barbastela','Barbastella barbastellus'],
   ['Murciélago de borde claro','Pipistrellus kuhlii'],
   ['Murciélago de Cabrera','Pipistrellus pygmaeus'],
@@ -1292,6 +1308,7 @@ const ESPECIES = [
   ['Papamoscas cerrojillo','Ficedula hypoleuca'],
   ['Papamoscas gris','Muscicapa striata'],
   ['Pardillo común','Linaria cannabina'],
+  ['Paseriforme',''],
   ['Pato colorado','Netta rufina'],
   ['Perdiz pardilla','Perdix perdix'],
   ['Perdiz roja','Alectoris rufa'],
@@ -1301,12 +1318,15 @@ const ESPECIES = [
   ['Picogordo','Coccothraustes coccothraustes'],
   ['Pinzón real','Fringilla montifringilla'],
   ['Pinzón vulgar','Fringilla coelebs'],
+  ['Pipistrellus sp.',''],
   ['Piquituerto común','Loxia curvirostra'],
   ['Pito real ibérico','Picus sharpei'],
   ['Porrón europeo','Aythya ferina'],
   ['Pájaro moscón europeo','Remiz pendulinus'],
   ['Quebrantahuesos','Gypaetus barbatus'],
+  ['Quiróptero',''],
   ['Rabilargo ibérico','Cyanopica cooki'],
+  ['Rapaz sin identificar',''],
   ['Rascón europeo','Rallus aquaticus'],
   ['Reyezuelo listado','Regulus ignicapilla'],
   ['Reyezuelo sencillo','Regulus regulus'],
@@ -1315,6 +1335,7 @@ const ESPECIES = [
   ['Ruiseñor común','Luscinia megarhynchos'],
   ['Ruiseñor pechiazul','Luscinia svecica'],
   ['Serín verdecillo','Serinus serinus'],
+  ['Sin observaciones',''],
   ['Sisón común','Tetrax tetrax'],
   ['Somormujo lavanco','Podiceps cristatus'],
   ['Tarabilla europea','Saxicola rubicola'],
@@ -1338,27 +1359,6 @@ const ESPECIES = [
   ['Zorzal charlo','Turdus viscivorus'],
   ['Zorzal común','Turdus philomelos'],
   ['Zorzal real','Turdus pilaris'],
-  ['Águila calzada','Hieraaetus pennatus'],
-  ['Águila imperial ibérica','Aquila adalberti'],
-  ['Águila perdicera','Aquila fasciata'],
-  ['Águila pescadora','Pandion haliaetus'],
-  ['Águila real','Aquila chrysaetos'],
-  ['Ánade azulón','Anas platyrhynchos'],
-  ['Ánade friso','Anas strepera'],
-  ['Ánade rabudo norteño','Anas acuta'],
-  ['Ánsar común','Anser anser'],
-  ['Cogujada sp.',''],
-  ['Mosquitero sp.','Phylloscopus sp.'],
-  ['Sin observaciones',''],
-  ['Ave grande',''],
-  ['Ave mediana',''],
-  ['Ave pequeña',''],
-  ['Rapaz sin identificar',''],
-  ['Paseriforme',''],
-  ['Murciélago (sin especificar)',''],
-  ['Pipistrellus sp.',''],
-  ['Quiróptero',''],
-  ['Hypsugo/Pipistrellus',''],
 ];
 
 // UTM 30N → WGS84 (para posicionar la ortofoto)
@@ -3003,7 +3003,13 @@ async function generarDocx(v, cads) {
         width: { size: CW, type: WidthType.DXA }, columnWidths: [CA, CB, CC, CD],
         rows: [
           new TableRow({ children: [cabCell('Datos generales', 4, CW)] }),
-          new TableRow({ children: [lbCell('Parque', CA), valCell(pNombre, CB), lbCell('Término municipal', CC), valCell(municipio, CD)] }),
+          new TableRow({ children: [lbCell('Parque', CA), valCell((() => {
+            if (v.parque === 'GUI') {
+              if (cd.subparque_cad === 'Guijo I') return 'Parque Eólico El Guijo I';
+              if (cd.subparque_cad === 'Guijo II') return 'Parque Eólico El Guijo II';
+            }
+            return pNombre;
+          })(), CB), lbCell('Término municipal', CC), valCell(municipio, CD)] }),
           new TableRow({ children: [lbCell('Fecha', CA), valCell(fmtFecha(v.fecha), CB), lbCell('Hora', CC), valCell(cd.hora || '—', CD)] }),
           new TableRow({ children: [
             lbCell('Tiempo estimado desde la muerte', CA + CB, 2),
@@ -3713,17 +3719,17 @@ function toast(msg) {
 // ══════════════════════════════════════════════
 
 const PUNTOS_CENSO = {
-  CE:  Array.from({length:7},  (_,i) => i+1),
-  AL:  Array.from({length:16}, (_,i) => i+1),
-  PA:  Array.from({length:6},  (_,i) => i+1),
-  CA:  Array.from({length:15}, (_,i) => i+1),
-  GUI: Array.from({length:10}, (_,i) => i+1),
+  CE:  [0, ...Array.from({length:7},  (_,i) => i+1)],
+  AL:  [0, ...Array.from({length:16}, (_,i) => i+1)],
+  PA:  [0, ...Array.from({length:6},  (_,i) => i+1)],
+  CA:  [0, ...Array.from({length:15}, (_,i) => i+1)],
+  GUI: [0, ...Array.from({length:10}, (_,i) => i+1)],
 };
 
 const CENSO_DISTANCIA = { '1': '<25 m', '2': '25-50 m', '3': '>100 m' };
 const CENSO_SEXO      = { '1': 'Macho', '2': 'Hembra', '3': 'Indeterminado' };
 const CENSO_EDAD      = { '3': 'Juvenil', '4': 'Adulto', '0': 'Indeterminado' };
-const CENSO_VUELO     = { '1': 'Posado', '2': 'Saltando', '3': 'Vuelo lineal', '4': 'Cicleo' };
+const CENSO_VUELO     = { '1': 'Posado', '2': 'Vuelo con paradas', '3': 'Vuelo lineal', '4': 'Cicleo' };
 const CENSO_ALTURA    = { '1': 'Posado', '2': 'Debajo altura colisión', '3': 'Altura colisión', '4': 'Por encima altura colisión' };
 
 const ESPECIES_AVES = ESPECIES.filter(([c]) =>
@@ -4018,14 +4024,20 @@ async function censosSincronizarUno(id) {
     const pInfo = PARQUES[v.parque] || {};
     const pNombre = pInfo.nombre || v.parque || '';
 
+    // Nombre de pestaña por parque
+    const tabParque = {
+      'AL': 'Alentisque', 'CE': 'Caramonte', 'CA': 'Carrascalejo',
+      'PA': 'Parideras', 'GUI': 'El Guijo'
+    }[v.parque] || pNombre;
+
     // Cabeceras Datos visita
     await censosAsegurarCabeceras(sheetIdCensos, 'Datos visita', [
       'ID_Visita','Parque','Municipio','Fecha','Hora Inicio','Hora Fin','Observador',
       'Temperatura','Visibilidad','Dirección Viento','Velocidad Viento','Precipitación','Nubosidad'
     ]);
 
-    // Cabeceras Censos
-    await censosAsegurarCabeceras(sheetIdCensos, 'Censos', [
+    // Cabeceras pestaña parque
+    await censosAsegurarCabeceras(sheetIdCensos, tabParque, [
       'ID_Visita','Observador','Fecha','Hora','Punto de muestreo',
       'Especie','Nº Individuos','Distancia','Sexo','Edad',
       'Tipo Vuelo','Altura Vuelo','Observaciones','Tipo Observación'
@@ -4037,7 +4049,7 @@ async function censosSincronizarUno(id) {
       v.temperatura, v.visibilidad, v.viento_dir, v.viento_vel, v.precipitacion, v.nubosidad
     ]]);
 
-    // Upsert Censos
+    // Upsert datos censo en pestaña del parque
     const filasCensos = [];
     (censo.puntos || []).forEach(p => {
       p.observaciones.forEach(o => {
@@ -4049,7 +4061,7 @@ async function censosSincronizarUno(id) {
       });
     });
     if (filasCensos.length > 0) {
-      await censosUpsertSheet(sheetIdCensos, 'Censos', id, filasCensos);
+      await censosUpsertSheet(sheetIdCensos, tabParque, id, filasCensos);
     }
 
     // Marcar como subido
@@ -4181,7 +4193,7 @@ function censosAbrirFormObs(num) {
       <div class="campo"><label>Tipo de vuelo</label>
         <select id="obs-vuelo-${num}"><option value="">—</option>
           <option value="1">1 — Posado</option>
-          <option value="2">2 — Saltando</option>
+          <option value="2">2 — Vuelo con paradas</option>
           <option value="3">3 — Vuelo lineal</option>
           <option value="4">4 — Cicleo</option>
         </select>

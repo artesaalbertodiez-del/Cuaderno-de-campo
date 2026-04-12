@@ -1003,9 +1003,6 @@ function nuevoFormulario() {
   const obs = (getAjustes().observador || '').trim();
   if (obs) document.getElementById('observador').value = obs;
 
-  // Copiar desde censos si parque y fecha coinciden
-  sincronizarDatosGeneralesCensosAMortandad();
-
   renderCadaveres(); actualizarBadge(); actualizarInventario();
   mostrarPantalla('pantalla-form');
   // NO se guarda automáticamente — solo al pulsar "Guardar"
@@ -2175,6 +2172,14 @@ function actualizarPeriodo() {
 // ══════════════════════════════════════════════
 function getDatosVisita() {
   actualizarPeriodo();
+  // Para campos meteorológicos: guardar valor numérico (para Sheet) y texto (para docx)
+  const selTxt = id => {
+    const el = document.getElementById(id);
+    if (!el) return '';
+    const opt = el.options[el.selectedIndex];
+    return opt ? opt.text : el.value;
+  };
+  const selVal = id => document.getElementById(id)?.value || '';
   return {
     parque: document.getElementById('parque').value,
     subparque: '',
@@ -2186,12 +2191,12 @@ function getDatosVisita() {
     hora_inicio: document.getElementById('hora_inicio').value,
     hora_fin: document.getElementById('hora_fin').value,
     observador: document.getElementById('observador').value,
-    temperatura: document.getElementById('temperatura').value,
-    visibilidad: document.getElementById('visibilidad').value,
-    viento_dir: document.getElementById('viento_dir').value,
-    viento_vel: document.getElementById('viento_vel').value,
-    precipitacion: document.getElementById('precipitacion').value,
-    nubosidad: document.getElementById('nubosidad').value,
+    temperatura:   selVal('temperatura'),   temperatura_txt:   selTxt('temperatura'),
+    visibilidad:   selVal('visibilidad'),   visibilidad_txt:   selTxt('visibilidad'),
+    viento_dir:    selVal('viento_dir'),
+    viento_vel:    selVal('viento_vel'),    viento_vel_txt:    selTxt('viento_vel'),
+    precipitacion: selVal('precipitacion'), precipitacion_txt: selTxt('precipitacion'),
+    nubosidad:     selVal('nubosidad'),     nubosidad_txt:     selTxt('nubosidad'),
   };
 }
 
@@ -2315,12 +2320,12 @@ ${cabHtml('FICHA DE CAMPO')}
 <table style="margin-bottom:1.7cm">
 <tr class="sg"><td colspan="6">Tiempo atmosférico</td></tr>
 <tr>
-  <td><span class="lb">Temperatura<sup> (1)</sup></span><br>${v.temperatura||'—'}</td>
-  <td><span class="lb">Visibilidad</span><br>${v.visibilidad||'—'}</td>
+  <td><span class="lb">Temperatura<sup> (1)</sup></span><br>${v.temperatura_txt||v.temperatura||'—'}</td>
+  <td><span class="lb">Visibilidad</span><br>${v.visibilidad_txt||v.visibilidad||'—'}</td>
   <td><span class="lb">Dir. viento</span><br>${v.viento_dir||'—'}</td>
-  <td><span class="lb">Velocidad<sup> (2)</sup></span><br>${v.viento_vel||'—'}</td>
-  <td><span class="lb">Precipitación</span><br>${v.precipitacion||'—'}</td>
-  <td><span class="lb">Nubosidad</span><br>${v.nubosidad||'—'}</td>
+  <td><span class="lb">Velocidad<sup> (2)</sup></span><br>${v.viento_vel_txt||v.viento_vel||'—'}</td>
+  <td><span class="lb">Precipitación</span><br>${v.precipitacion_txt||v.precipitacion||'—'}</td>
+  <td><span class="lb">Nubosidad</span><br>${v.nubosidad_txt||v.nubosidad||'—'}</td>
 </tr>
 </table>
 
@@ -2953,12 +2958,12 @@ async function generarDocx(v, cads) {
     rows: [
       new TableRow({ children: [cabCell('Tiempo atmosférico', 6, CW)] }),
       new TableRow({ children: [
-        stackCell('Temperatura', v.temperatura || '—', WT[0], 1, [run(' (1)', { bold: false, size: 14 })]),
-        stackCell('Visibilidad', v.visibilidad || '—', WT[1]),
+        stackCell('Temperatura', v.temperatura_txt || v.temperatura || '—', WT[0], 1, [run(' (1)', { bold: false, size: 14 })]),
+        stackCell('Visibilidad', v.visibilidad_txt || v.visibilidad || '—', WT[1]),
         stackCell('Dir. viento', v.viento_dir || '—', WT[2]),
-        stackCell('Velocidad', v.viento_vel || '—', WT[3], 1, [run(' (2)', { bold: false, size: 14 })]),
-        stackCell('Precipitación', v.precipitacion || '—', WT[4]),
-        stackCell('Nubosidad', v.nubosidad || '—', WT[5]),
+        stackCell('Velocidad', v.viento_vel_txt || v.viento_vel || '—', WT[3], 1, [run(' (2)', { bold: false, size: 14 })]),
+        stackCell('Precipitación', v.precipitacion_txt || v.precipitacion || '—', WT[4]),
+        stackCell('Nubosidad', v.nubosidad_txt || v.nubosidad || '—', WT[5]),
       ]}),
     ]
   });
@@ -3606,12 +3611,12 @@ ${cabHtml('FICHA DE CAMPO')}
 <table>
 <tr class="sg"><td colspan="6">Tiempo atmosférico</td></tr>
 <tr>
-  <td><span class="lb">Temperatura</span><br>${v.temperatura||'—'}</td>
-  <td><span class="lb">Visibilidad</span><br>${v.visibilidad||'—'}</td>
+  <td><span class="lb">Temperatura</span><br>${v.temperatura_txt||v.temperatura||'—'}</td>
+  <td><span class="lb">Visibilidad</span><br>${v.visibilidad_txt||v.visibilidad||'—'}</td>
   <td><span class="lb">Dir. viento</span><br>${v.viento_dir||'—'}</td>
-  <td><span class="lb">Velocidad</span><br>${v.viento_vel||'—'}</td>
-  <td><span class="lb">Precipitación</span><br>${v.precipitacion||'—'}</td>
-  <td><span class="lb">Nubosidad</span><br>${v.nubosidad||'—'}</td>
+  <td><span class="lb">Velocidad</span><br>${v.viento_vel_txt||v.viento_vel||'—'}</td>
+  <td><span class="lb">Precipitación</span><br>${v.precipitacion_txt||v.precipitacion||'—'}</td>
+  <td><span class="lb">Nubosidad</span><br>${v.nubosidad_txt||v.nubosidad||'—'}</td>
 </tr>
 </table>
 
@@ -3843,51 +3848,6 @@ function abrirModuloCensos() {
   censosActualizarContador();
 }
 
-// Sincronizar datos generales cuando parque y fecha coinciden entre módulos
-function sincronizarDatosGeneralesMortandadACensos() {
-  const mParque = document.getElementById('parque')?.value;
-  const mFecha  = document.getElementById('fecha')?.value;
-  const cFecha  = document.getElementById('c-fecha')?.value;
-  const cParque = document.getElementById('c-parque')?.value;
-  // Si mortandad tiene parque y fecha, y censos tiene la misma fecha (o está vacío)
-  if (mParque && mFecha && (!cFecha || cFecha === mFecha) && (!cParque || cParque === mParque)) {
-    const set = (id, val) => { const el = document.getElementById(id); if (el && val) el.value = val; };
-    set('c-parque',      mParque);
-    set('c-fecha',       mFecha);
-    set('c-observador',  document.getElementById('observador')?.value);
-    set('c-hora-inicio', document.getElementById('hora_inicio')?.value);
-    set('c-hora-fin',    document.getElementById('hora_fin')?.value);
-    set('c-temperatura', document.getElementById('temperatura')?.value);
-    set('c-visibilidad', document.getElementById('visibilidad')?.value);
-    set('c-viento-dir',  document.getElementById('viento_dir')?.value);
-    set('c-viento-vel',  document.getElementById('viento_vel')?.value);
-    set('c-precipitacion',document.getElementById('precipitacion')?.value);
-    set('c-nubosidad',   document.getElementById('nubosidad')?.value);
-    censosActualizarMunicipio();
-  }
-}
-
-function sincronizarDatosGeneralesCensosAMortandad() {
-  const cParque = document.getElementById('c-parque')?.value;
-  const cFecha  = document.getElementById('c-fecha')?.value;
-  const mFecha  = document.getElementById('fecha')?.value;
-  const mParque = document.getElementById('parque')?.value;
-  if (cParque && cFecha && (!mFecha || mFecha === cFecha) && (!mParque || mParque === cParque)) {
-    const set = (id, val) => { const el = document.getElementById(id); if (el && val) el.value = val; };
-    set('parque',       cParque);
-    set('fecha',        cFecha);
-    set('observador',   document.getElementById('c-observador')?.value);
-    set('hora_inicio',  document.getElementById('c-hora-inicio')?.value);
-    set('hora_fin',     document.getElementById('c-hora-fin')?.value);
-    set('temperatura',  document.getElementById('c-temperatura')?.value);
-    set('visibilidad',  document.getElementById('c-visibilidad')?.value);
-    set('viento_dir',   document.getElementById('c-viento-dir')?.value);
-    set('viento_vel',   document.getElementById('c-viento-vel')?.value);
-    set('precipitacion',document.getElementById('c-precipitacion')?.value);
-    set('nubosidad',    document.getElementById('c-nubosidad')?.value);
-    actualizarMunicipio();
-  }
-}
 
 function censosNuevo() {
   censosVisitaId = 'censo_' + Date.now();
@@ -3903,8 +3863,6 @@ function censosNuevo() {
   });
   if (aj.observador) document.getElementById('c-observador').value = aj.observador;
   else document.getElementById('c-observador').value = '';
-  // Copiar desde mortandad si parque y fecha coinciden
-  sincronizarDatosGeneralesMortandadACensos();
   mostrarPantalla('pantalla-censos-visita');
 }
 
@@ -4450,21 +4408,31 @@ async function censosAsegurarCabeceras(sheetId, tabName, cabeceras) {
   const res = await fetch(url, { headers: { Authorization: `Bearer ${gAccessToken}` } });
   if (!res.ok) {
     if (res.status === 400) {
+      // Pestaña no existe — crearla
       await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}:batchUpdate`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${gAccessToken}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ requests: [{ addSheet: { properties: { title: tabName } } }] })
       });
-    } else { throw new Error(`No se pudo acceder a ${tabName}: HTTP ${res.status}`); }
+      // Esperar un momento para que la API procese la nueva pestaña
+      await new Promise(r => setTimeout(r, 800));
+    } else {
+      throw new Error(`No se pudo acceder a ${tabName}: HTTP ${res.status}`);
+    }
   } else {
     const data = await res.json();
-    if ((data.values?.[0] || []).length > 0) return;
+    if ((data.values?.[0] || []).length > 0) return; // Ya tiene cabeceras
   }
-  await fetch(
-    `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(tabName)}!A1:append?valueInputOption=RAW`,
+  // Insertar cabeceras
+  const resAppend = await fetch(
+    `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(tabName)}!A1:append?valueInputOption=USER_ENTERED`,
     { method: 'POST', headers: { Authorization: `Bearer ${gAccessToken}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ values: [cabeceras] }) }
   );
+  if (!resAppend.ok) {
+    const err = await resAppend.json().catch(() => ({}));
+    throw new Error(`Error al crear cabeceras en ${tabName}: ${err?.error?.message || resAppend.status}`);
+  }
 }
 
 async function censosUpsertSheet(sheetId, tabName, visitaId, filasNuevas) {

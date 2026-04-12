@@ -492,14 +492,16 @@ input[type="file"] { display: none; }
       <div class="fila f2">
         <div class="campo"><label>Temperatura</label>
           <select id="temperatura"><option value="">—</option>
-            <option>Muy fría (&lt;0°C)</option><option>Fría (0-10°C)</option>
-            <option>Fresca (10-15°C)</option><option>Templada (15-20°C)</option>
-            <option>Cálida (20-30°C)</option><option>Muy cálida (&gt;30°C)</option>
+            <option value="1">Muy fría</option><option value="2">Fría</option>
+            <option value="3">Fresca</option><option value="4">Buena</option>
+            <option value="5">Calor</option><option value="6">Mucho calor</option>
           </select>
         </div>
         <div class="campo"><label>Visibilidad</label>
           <select id="visibilidad"><option value="">—</option>
-            <option>Buena</option><option>Regular</option><option>Mala</option>
+            <option value="1">Total</option><option value="2">Media</option>
+            <option value="3">Mala</option><option value="4">Muy mala</option>
+            <option value="5">Nula</option>
           </select>
         </div>
         <div class="campo"><label>Dirección del viento</label>
@@ -511,20 +513,23 @@ input[type="file"] { display: none; }
         </div>
         <div class="campo"><label>Velocidad del viento</label>
           <select id="viento_vel"><option value="">—</option>
-            <option>Calma</option><option>Viento flojo</option>
-            <option>Viento medio</option><option>Viento fuerte</option><option>Vendaval</option>
+            <option value="1">Calma</option><option value="2">Viento flojo</option>
+            <option value="3">Viento medio</option><option value="4">Fuerte</option>
+            <option value="5">Muy fuerte</option>
           </select>
         </div>
         <div class="campo"><label>Precipitación</label>
           <select id="precipitacion"><option value="">—</option>
-            <option>Nula</option><option>Llovizna</option>
-            <option>Lluvia</option><option>Lluvia intensa</option><option>Nieve</option>
+            <option value="1">Nula</option><option value="2">Intermitente</option>
+            <option value="3">Suave</option><option value="4">Media</option>
+            <option value="5">Fuerte</option>
           </select>
         </div>
         <div class="campo"><label>Nubosidad</label>
           <select id="nubosidad"><option value="">—</option>
-            <option>Despejado</option><option>Poco nuboso</option>
-            <option>Nuboso</option><option>Cubierto</option>
+            <option value="1">Despejado</option><option value="2">¼ cubierto</option>
+            <option value="3">½ cubierto</option><option value="4">¾ cubierto</option>
+            <option value="5">Cubierto</option>
           </select>
         </div>
       </div>
@@ -624,14 +629,16 @@ input[type="file"] { display: none; }
       <div class="fila f2">
         <div class="campo"><label>Temperatura</label>
           <select id="c-temperatura"><option value="">—</option>
-            <option>Muy fría (&lt;0°C)</option><option>Fría (0-10°C)</option>
-            <option>Fresca (10-15°C)</option><option>Templada (15-20°C)</option>
-            <option>Cálida (20-30°C)</option><option>Muy cálida (&gt;30°C)</option>
+            <option value="1">Muy fría</option><option value="2">Fría</option>
+            <option value="3">Fresca</option><option value="4">Buena</option>
+            <option value="5">Calor</option><option value="6">Mucho calor</option>
           </select>
         </div>
         <div class="campo"><label>Visibilidad</label>
           <select id="c-visibilidad"><option value="">—</option>
-            <option>Buena</option><option>Regular</option><option>Mala</option>
+            <option value="1">Total</option><option value="2">Media</option>
+            <option value="3">Mala</option><option value="4">Muy mala</option>
+            <option value="5">Nula</option>
           </select>
         </div>
         <div class="campo"><label>Dirección del viento</label>
@@ -643,20 +650,23 @@ input[type="file"] { display: none; }
         </div>
         <div class="campo"><label>Velocidad del viento</label>
           <select id="c-viento-vel"><option value="">—</option>
-            <option>Calma</option><option>Viento flojo</option>
-            <option>Viento medio</option><option>Viento fuerte</option><option>Vendaval</option>
+            <option value="1">Calma</option><option value="2">Viento flojo</option>
+            <option value="3">Viento medio</option><option value="4">Fuerte</option>
+            <option value="5">Muy fuerte</option>
           </select>
         </div>
         <div class="campo"><label>Precipitación</label>
           <select id="c-precipitacion"><option value="">—</option>
-            <option>Nula</option><option>Llovizna</option>
-            <option>Lluvia</option><option>Lluvia intensa</option><option>Nieve</option>
+            <option value="1">Nula</option><option value="2">Intermitente</option>
+            <option value="3">Suave</option><option value="4">Media</option>
+            <option value="5">Fuerte</option>
           </select>
         </div>
         <div class="campo"><label>Nubosidad</label>
           <select id="c-nubosidad"><option value="">—</option>
-            <option>Despejado</option><option>Poco nuboso</option>
-            <option>Nuboso</option><option>Cubierto</option>
+            <option value="1">Despejado</option><option value="2">¼ cubierto</option>
+            <option value="3">½ cubierto</option><option value="4">¾ cubierto</option>
+            <option value="5">Cubierto</option>
           </select>
         </div>
       </div>
@@ -992,6 +1002,9 @@ function nuevoFormulario() {
 
   const obs = (getAjustes().observador || '').trim();
   if (obs) document.getElementById('observador').value = obs;
+
+  // Copiar desde censos si parque y fecha coinciden
+  sincronizarDatosGeneralesCensosAMortandad();
 
   renderCadaveres(); actualizarBadge(); actualizarInventario();
   mostrarPantalla('pantalla-form');
@@ -3830,6 +3843,52 @@ function abrirModuloCensos() {
   censosActualizarContador();
 }
 
+// Sincronizar datos generales cuando parque y fecha coinciden entre módulos
+function sincronizarDatosGeneralesMortandadACensos() {
+  const mParque = document.getElementById('parque')?.value;
+  const mFecha  = document.getElementById('fecha')?.value;
+  const cFecha  = document.getElementById('c-fecha')?.value;
+  const cParque = document.getElementById('c-parque')?.value;
+  // Si mortandad tiene parque y fecha, y censos tiene la misma fecha (o está vacío)
+  if (mParque && mFecha && (!cFecha || cFecha === mFecha) && (!cParque || cParque === mParque)) {
+    const set = (id, val) => { const el = document.getElementById(id); if (el && val) el.value = val; };
+    set('c-parque',      mParque);
+    set('c-fecha',       mFecha);
+    set('c-observador',  document.getElementById('observador')?.value);
+    set('c-hora-inicio', document.getElementById('hora_inicio')?.value);
+    set('c-hora-fin',    document.getElementById('hora_fin')?.value);
+    set('c-temperatura', document.getElementById('temperatura')?.value);
+    set('c-visibilidad', document.getElementById('visibilidad')?.value);
+    set('c-viento-dir',  document.getElementById('viento_dir')?.value);
+    set('c-viento-vel',  document.getElementById('viento_vel')?.value);
+    set('c-precipitacion',document.getElementById('precipitacion')?.value);
+    set('c-nubosidad',   document.getElementById('nubosidad')?.value);
+    censosActualizarMunicipio();
+  }
+}
+
+function sincronizarDatosGeneralesCensosAMortandad() {
+  const cParque = document.getElementById('c-parque')?.value;
+  const cFecha  = document.getElementById('c-fecha')?.value;
+  const mFecha  = document.getElementById('fecha')?.value;
+  const mParque = document.getElementById('parque')?.value;
+  if (cParque && cFecha && (!mFecha || mFecha === cFecha) && (!mParque || mParque === cParque)) {
+    const set = (id, val) => { const el = document.getElementById(id); if (el && val) el.value = val; };
+    set('parque',       cParque);
+    set('fecha',        cFecha);
+    set('observador',   document.getElementById('c-observador')?.value);
+    set('hora_inicio',  document.getElementById('c-hora-inicio')?.value);
+    set('hora_fin',     document.getElementById('c-hora-fin')?.value);
+    set('temperatura',  document.getElementById('c-temperatura')?.value);
+    set('visibilidad',  document.getElementById('c-visibilidad')?.value);
+    set('viento_dir',   document.getElementById('c-viento-dir')?.value);
+    set('viento_vel',   document.getElementById('c-viento-vel')?.value);
+    set('precipitacion',document.getElementById('c-precipitacion')?.value);
+    set('nubosidad',    document.getElementById('c-nubosidad')?.value);
+    actualizarMunicipio();
+  }
+}
+
 function censosNuevo() {
   censosVisitaId = 'censo_' + Date.now();
   censosPuntos = [];
@@ -3844,6 +3903,8 @@ function censosNuevo() {
   });
   if (aj.observador) document.getElementById('c-observador').value = aj.observador;
   else document.getElementById('c-observador').value = '';
+  // Copiar desde mortandad si parque y fecha coinciden
+  sincronizarDatosGeneralesMortandadACensos();
   mostrarPantalla('pantalla-censos-visita');
 }
 
@@ -4088,19 +4149,21 @@ async function censosSincronizarUno(id) {
   toast('Sincronizando…');
   try {
     const v = censo.visita || {};
-    const pInfo = PARQUES[v.parque] || {};
-    const pNombre = pInfo.nombre || v.parque || '';
 
-    // Nombre de pestaña por parque
-    const tabParque = {
+    // Nombre corto del parque (sin "Parque Eólico")
+    const nombreCorto = {
       'AL': 'Alentisque', 'CE': 'Caramonte', 'CA': 'Carrascalejo',
       'PA': 'Parideras', 'GUI': 'El Guijo'
-    }[v.parque] || pNombre;
+    }[v.parque] || v.parque || '';
 
-    // Cabeceras Datos visita
+    // Nombre de pestaña por parque
+    const tabParque = nombreCorto;
+
+    // Cabeceras Datos visita — nuevo orden
     await censosAsegurarCabeceras(sheetIdCensos, 'Datos visita', [
-      'ID_Visita','Parque','Municipio','Fecha','Hora Inicio','Hora Fin','Observador',
-      'Temperatura','Visibilidad','Dirección Viento','Velocidad Viento','Precipitación','Nubosidad'
+      'ID_Visita','Parque','Fecha','Observador',
+      'Dirección Viento','Velocidad Viento','Temperatura','Visibilidad','Nubosidad',
+      'Hora Inicio','Hora Fin'
     ]);
 
     // Cabeceras pestaña parque
@@ -4110,10 +4173,11 @@ async function censosSincronizarUno(id) {
       'Tipo Vuelo','Altura Vuelo','Observaciones','Tipo Observación'
     ]);
 
-    // Upsert Datos visita
+    // Upsert Datos visita — nuevo orden, valores numéricos en meteorología
     await censosUpsertSheet(sheetIdCensos, 'Datos visita', id, [[
-      id, pNombre, v.municipio, v.fecha, v.hora_inicio, v.hora_fin, v.observador,
-      v.temperatura, v.visibilidad, v.viento_dir, v.viento_vel, v.precipitacion, v.nubosidad
+      id, nombreCorto, v.fecha, v.observador,
+      v.viento_dir, v.viento_vel, v.temperatura, v.visibilidad, v.nubosidad,
+      v.hora_inicio, v.hora_fin
     ]]);
 
     // Upsert datos censo en pestaña del parque

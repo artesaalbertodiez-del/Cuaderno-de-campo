@@ -401,6 +401,15 @@ input[type="file"] { display: none; }
         <button class="btn-r btn-sm" onclick="borrarTodoHistorial()">🗑 Borrar todo el historial</button>
       </div>
     </div>
+    <div class="ajuste-fila" style="flex-direction:column;align-items:flex-start;gap:8px">
+      <label>Copia de seguridad completa (historial + censos + ajustes)</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn-v btn-sm" onclick="exportarBackup()">💾 Exportar copia de seguridad</button>
+        <button class="btn-a btn-sm" onclick="document.getElementById('import-backup-input').click()">📂 Importar copia de seguridad</button>
+        <input type="file" id="import-backup-input" accept=".json" style="display:none" onchange="importarBackup(this)">
+      </div>
+      <span style="font-size:11px;color:var(--texto2)">El archivo se guarda en Archivos → Descargas. Importa en otro dispositivo para restaurar todos los datos.</span>
+    </div>
   </div>
 </div>
 
@@ -3702,6 +3711,64 @@ ${fotosHtml}`;
 }
 
 
+
+// ══════════════════════════════════════════════
+// COPIA DE SEGURIDAD
+// ══════════════════════════════════════════════
+function exportarBackup() {
+  const backup = {
+    version: 1,
+    fecha: new Date().toISOString(),
+    engie_visitas:  localStorage.getItem('engie_visitas')  || '[]',
+    engie_ajustes:  localStorage.getItem('engie_ajustes')  || '{}',
+    engie_censos:   localStorage.getItem('engie_censos')   || '[]',
+  };
+  const json = JSON.stringify(backup, null, 2);
+  const fecha = new Date().toISOString().split('T')[0];
+  descargar(json, `backup_cuaderno_campo_${fecha}.json`, 'application/json');
+  toast('✓ Copia de seguridad exportada');
+}
+
+function importarBackup(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const r = new FileReader();
+  r.onload = e => {
+    try {
+      const backup = JSON.parse(e.target.result);
+      if (!backup.version || !backup.engie_visitas) {
+        toast('⚠ Archivo no válido');
+        return;
+      }
+      if (!confirm(`¿Importar copia de seguridad del ${backup.fecha ? backup.fecha.split('T')[0] : 'archivo'}? Esto reemplazará todos los datos actuales.`)) return;
+
+      if (backup.engie_visitas) localStorage.setItem('engie_visitas', backup.engie_visitas);
+      if (backup.engie_ajustes) localStorage.setItem('engie_ajustes', backup.engie_ajustes);
+      if (backup.engie_censos)  localStorage.setItem('engie_censos',  backup.engie_censos);
+
+      // Recargar ajustes en pantalla
+      const aj = getAjustes();
+      const elObs = document.getElementById('aj-observador');
+      if (elObs) elObs.value = aj.observador || '';
+      const elDrive = document.getElementById('aj-drive-carpeta');
+      if (elDrive) elDrive.value = aj.driveCarpeta || 'Mortandad ENGIE';
+      const elSheet = document.getElementById('aj-sheet-id');
+      if (elSheet) elSheet.value = aj.sheetId || '';
+      const elTab = document.getElementById('aj-sheet-tab');
+      if (elTab) elTab.value = aj.sheetTab || 'Mortandad';
+      const elCensos = document.getElementById('aj-sheet-censos');
+      if (elCensos) elCensos.value = aj.sheetIdCensos || '';
+
+      actualizarMenuContadores();
+      censosActualizarContador();
+      toast('✅ Copia de seguridad importada correctamente');
+    } catch(err) {
+      toast('⚠ Error al importar: ' + err.message);
+    }
+    input.value = '';
+  };
+  r.readAsText(file);
+}
 
 function fmtFecha(f) {
   if(!f) return '—';

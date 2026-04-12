@@ -755,7 +755,7 @@ const PARQUES = {
     swLat: 40.94189900, swLng: -2.18996169,
     neLat: 40.99853175, neLng: -2.13390228,
     imgW: 2006, imgH: 2728,
-    imgSrc: 'PE_Guijo.jpg', img: null
+    imgSrc: null, img: null
   }
 };
 
@@ -2982,7 +2982,7 @@ async function generarDocx(v, cads) {
   for (let ci = 0; ci < cads.length; ci++) {
     const cd = cads[ci];
     const tiempoStr = cd.tiempo_muerte ? `${cd.tiempo_muerte} ${parseFloat(cd.tiempo_muerte) === 1 ? 'día' : 'días'}` : '—';
-    const distStr   = cd.distancia    ? `${cd.distancia} metros`    : '—';
+    const distStr   = cd.distancia ? `${cd.distancia} metros${cd.direccion_aero ? ' ' + cd.direccion_aero : ''}` : '—';
 
     // Salto de página antes de cada ficha excepto la primera
     if (ci > 0) {
@@ -4094,11 +4094,14 @@ function censosRenderPunto(p) {
 
   const obsHtml = p.observaciones.map((o, oi) => `
     <div class="obs-card">
-      <div>
+      <div style="flex:1">
         <div class="obs-especie">${o.especie_comun || '—'}${o.especie_cientifico ? ` <em style="font-weight:400;font-size:11px">(${o.especie_cientifico})</em>` : ''}</div>
         <div class="obs-meta">Nº: ${o.n_individuos||'—'} · ${CENSO_DISTANCIA[o.distancia]||'—'} · ${CENSO_VUELO[o.tipo_vuelo]||'—'} · ${CENSO_ALTURA[o.altura_vuelo]||'—'}</div>
       </div>
-      <button class="btn-r" onclick="censosEliminarObs(${p.num},${oi})">✕</button>
+      <div style="display:flex;gap:4px">
+        <button class="btn-a" style="padding:4px 8px;font-size:12px" onclick="censosEditarObs(${p.num},${oi})">✏️</button>
+        <button class="btn-r" onclick="censosEliminarObs(${p.num},${oi})">✕</button>
+      </div>
     </div>`).join('');
 
   return `
@@ -4253,6 +4256,48 @@ function censosGuardarObs(num) {
     censosTogglePunto(num);
     const body = document.getElementById(`punto-body-${num}`);
     if (body) body.style.display = 'block';
+  }, 50);
+}
+
+function censosEditarObs(num, oi) {
+  const p = censosPuntos.find(x => x.num === num);
+  if (!p) return;
+  const o = p.observaciones[oi];
+  if (!o) return;
+
+  // Abrir el punto si está cerrado
+  const body = document.getElementById(`punto-body-${num}`);
+  if (body) body.style.display = 'block';
+
+  // Abrir el formulario de observación
+  censosAbrirFormObs(num);
+
+  // Rellenar con los datos existentes
+  setTimeout(() => {
+    const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+    setVal(`obs-especie-${num}`, o.especie_comun);
+    setVal(`obs-sci-${num}`, o.especie_cientifico);
+    setVal(`obs-n-${num}`, o.n_individuos);
+    setVal(`obs-tipo-${num}`, o.tipo_observacion);
+    setVal(`obs-dist-${num}`, o.distancia);
+    setVal(`obs-sexo-${num}`, o.sexo);
+    setVal(`obs-edad-${num}`, o.edad);
+    setVal(`obs-vuelo-${num}`, o.tipo_vuelo);
+    setVal(`obs-altura-${num}`, o.altura_vuelo);
+    setVal(`obs-obs-${num}`, o.observaciones);
+
+    // Cambiar el botón Añadir por Actualizar y eliminar la obs original al guardar
+    const formEl = document.getElementById(`obs-form-${num}`);
+    if (!formEl) return;
+    const btnAnadir = formEl.querySelector('button.btn-v');
+    if (btnAnadir) {
+      btnAnadir.textContent = '✓ Actualizar';
+      btnAnadir.onclick = () => {
+        // Eliminar la observación original y guardar la nueva
+        p.observaciones.splice(oi, 1);
+        censosGuardarObs(num);
+      };
+    }
   }, 50);
 }
 

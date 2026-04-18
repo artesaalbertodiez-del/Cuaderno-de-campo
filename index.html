@@ -2778,7 +2778,7 @@ async function subirFotosDrive(vis, carpetaRaiz, subCarpeta) {
 }
 
 async function asegurarCabecerasSheet(sheetId, tabName) {
-  const cabeceras = [[
+  const cabeceras = [
     'ID_Visita','CONSULTOR','Subparque','FECHA','HORA','Fecha aproximada',
     'Infraestructura','Sistema referencia','UTM X','UTM Y',
     'AEROGENERADOR','ESPECIE','TAMAÑO','MES','FRECUENCIA','Tamaño/frecuencia','AÑO',
@@ -2786,10 +2786,16 @@ async function asegurarCabecerasSheet(sheetId, tabName) {
     'Imagen','Lat WGS84','Lon WGS84',
     'Distancia Aerog.','Dirección Aerog.','Nombre Científico','Causa Probable',
     'Estado Cadáver','Estado Descomposición','Actuaciones'
-  ]];
+  ];
+  // Limpiar fila 1 y reescribir con cabeceras actuales
+  await fetch(
+    `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(tabName)}!1:1:clear`,
+    { method:'POST', headers:{ Authorization:`Bearer ${gAccessToken}`,'Content-Type':'application/json' } }
+  );
   await fetch(
     `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(tabName)}!A1?valueInputOption=USER_ENTERED`,
-    { method:'PUT', headers:{ Authorization:`Bearer ${gAccessToken}`,'Content-Type':'application/json' }, body:JSON.stringify({values:cabeceras}) }
+    { method:'PUT', headers:{ Authorization:`Bearer ${gAccessToken}`,'Content-Type':'application/json' },
+      body: JSON.stringify({ values: [cabeceras] }) }
   );
 }
 

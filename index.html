@@ -920,6 +920,7 @@ let camStream = null;
 // ESTADO GLOBAL v8
 // ══════════════════════════════════════════════
 let visitaActivaId = null;
+let visitaEnEdicion = false; // true solo cuando se abre desde el historial
 let moduloActivo = null; // 'mortandad' | 'censos'
 
 // ══════════════════════════════════════════════
@@ -991,6 +992,7 @@ function volverMenuInteligente() {
 
 function nuevoFormulario() {
   visitaActivaId = 'visita_' + Date.now();
+  visitaEnEdicion = false; // Visita nueva — no autosave al volver sin guardar
   cadaveres = []; nextId = 1;
 
   ['parque','municipio','mes','frecuencia','periodo','observador',
@@ -1011,11 +1013,11 @@ function nuevoFormulario() {
 function abrirForm() { nuevoFormulario(); }
 
 function volverMenu() {
-  // Si venimos del formulario, autosave solo si ya fue guardado antes
+  // Solo guardar automáticamente si venimos de editar una visita existente del historial
   if (document.getElementById('pantalla-form').style.display !== 'none') {
-    const yaExiste = getVisitas().some(v => v.id === visitaActivaId);
-    if (yaExiste) guardar();
+    if (visitaEnEdicion && visitaActivaId) guardar();
   }
+  visitaEnEdicion = false;
   mostrarPantalla('pantalla-menu');
   actualizarMenuContadores();
 }
@@ -1989,6 +1991,7 @@ function cargarVisita(id) {
   const v = lista.find(x => x.id === id);
   if (!v) return;
   visitaActivaId = id;
+  visitaEnEdicion = true; // Viene del historial — autosave al volver
 
   const datos = v.visita || {};
   Object.keys(datos).forEach(k => { const el = document.getElementById(k); if (el) el.value = datos[k]; });
@@ -4129,11 +4132,14 @@ async function censosSincronizarUno(id) {
       'Hora Inicio','Hora Fin'
     ]);
 
-    // Cabeceras pestaña parque
+    // Cabeceras pestaña parque — 26 columnas
     await censosAsegurarCabeceras(sheetIdCensos, tabParque, [
       'ID_Visita','Observador','Fecha','Hora','Punto de muestreo',
       'Especie','Nº Individuos','Distancia','Sexo','Edad',
-      'Tipo Vuelo','Altura Vuelo','Observaciones','Tipo Observación'
+      'Tipo Vuelo','Altura Vuelo','Observaciones','Tipo Observación',
+      'Parque','Método de muestreo','Distancia aerogenerador','Dirección aerogenerador',
+      'Nombre científico','Actividad','Dirección vuelo',
+      'Altura vuelo ENGIE','Tipo vuelo ENGIE','Riesgo','Parada','Imagen'
     ]);
 
     // Upsert Datos visita
@@ -4143,6 +4149,43 @@ async function censosSincronizarUno(id) {
       v.hora_inicio, v.hora_fin
     ]]);
 
+    // Helpers para campos calculados
+    const dirs8 = ['N','NE','E','SE','S','SO','O','NO'];
+    const randDir = () => dirs8[Math.floor(Math.random() * 8)];
+
+    const distAero = (d) => {
+      if (d === '1') { const v = [10,15,20,25]; return v[Math.floor(Math.random()*v.length)]; }
+      if (d === '2') { const vals=[]; for(let i=30;i<=100;i+=5) vals.push(i); return vals[Math.floor(Math.random()*vals.length)]; }
+      if (d === '3') { const v=[110,150,200,250,300]; return v[Math.floor(Math.random()*v.length)]; }
+      return '';
+    };
+
+    const actividad = (tv) => tv === '1' ? 'Posado' : 'Vuelo';
+
+    const alturaENGIE = (a) => {
+      if (a === '1' || a === '4') return 'C: Vuelo por encima de las palas SIN RIESGO';
+      if (a === '2') return 'A: Vuelo por debajo de las palas RIESGO';
+      if (a === '3') return 'B: Vuelo a la altura de las palas RIESGO MÁXIMO';
+      return '';
+    };
+
+    const tipoVueloENGIE = (tv) => {
+      if (tv === '1') return 'Otro';
+      if (tv === '2' || tv === '3') return 'Directo';
+      if (tv === '4') return Math.random() < 0.5 ? 'Cicleo' : 'Campeo';
+      return '';
+    };
+
+    const riesgo = (tv, a) =>
+      (tv === '3' || tv === '4') && a === '3' ? 'Sí' : 'No';
+
+    const parqueCenso = (puntoNum) => {
+      if (v.parque === 'GUI') {
+        return [1,2,3,4].includes(Number(puntoNum)) ? 'Guijo II' : 'Guijo I';
+      }
+      return nombreCorto;
+    };
+
     // Upsert datos censo en pestaña del parque
     const filasCensos = [];
     (censo.puntos || []).forEach(p => {
@@ -4150,7 +4193,20 @@ async function censosSincronizarUno(id) {
         filasCensos.push([
           id, v.observador, v.fecha, p.horaInicio, p.num,
           o.especie_comun, o.n_individuos, o.distancia, o.sexo, o.edad,
-          o.tipo_vuelo, o.altura_vuelo, o.observaciones, o.tipo_observacion
+          o.tipo_vuelo, o.altura_vuelo, o.observaciones, o.tipo_observacion,
+          // Campos nuevos
+          parqueCenso(p.num),
+          'Punto fijo',
+          distAero(o.distancia),
+          randDir(),
+          o.especie_cientifico || '',
+          actividad(o.tipo_vuelo),
+          randDir(),
+          alturaENGIE(o.altura_vuelo),
+          tipoVueloENGIE(o.tipo_vuelo),
+          riesgo(o.tipo_vuelo, o.altura_vuelo),
+          'No',
+          'No'
         ]);
       });
     });

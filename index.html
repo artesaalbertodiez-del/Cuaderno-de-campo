@@ -4199,7 +4199,14 @@ async function censosSincronizarUno(id) {
           'Punto fijo',
           distAero(o.distancia),
           randDir(),
-          o.especie_cientifico || '',
+          // Nombre científico con reglas especiales
+          (() => {
+            const esp = o.especie_comun || '';
+            const sinId = ['Ave grande','Ave mediana','Ave pequeña','Paseriforme','Cogujada sp.','Mosquitero sp.'];
+            if (esp === 'Sin observaciones') return 'Sin observaciones';
+            if (sinId.includes(esp)) return 'Ave sin identificar';
+            return o.especie_cientifico || '';
+          })(),
           actividad(o.tipo_vuelo),
           randDir(),
           alturaENGIE(o.altura_vuelo),

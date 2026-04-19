@@ -4202,7 +4202,7 @@ async function censosSincronizarUno(id) {
           // Nombre científico con reglas especiales
           (() => {
             const esp = o.especie_comun || '';
-            const sinId = ['Ave grande','Ave mediana','Ave pequeña','Paseriforme','Cogujada sp.','Mosquitero sp.'];
+            const sinId = ['Ave grande','Ave mediana','Ave pequeña','Rapaz sin identificar','Paseriforme','Cogujada sp.','Mosquitero sp.'];
             if (esp === 'Sin observaciones') return 'Sin observaciones';
             if (sinId.includes(esp)) return 'Ave sin identificar';
             return o.especie_cientifico || '';

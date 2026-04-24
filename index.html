@@ -3814,7 +3814,7 @@ const PUNTOS_CENSO = {
   GUI: [0, ...Array.from({length:10}, (_,i) => i+1)],
 };
 
-const CENSO_DISTANCIA = { '1': '<25 m', '2': '25-50 m', '3': '>100 m' };
+const CENSO_DISTANCIA = { '1': '<25 m', '2': '25-100 m', '3': '>100 m' };
 const CENSO_SEXO      = { '1': 'Macho', '2': 'Hembra', '3': 'Indeterminado' };
 const CENSO_EDAD      = { '3': 'Juvenil', '4': 'Adulto', '0': 'Indeterminado' };
 const CENSO_VUELO     = { '1': 'Posado', '2': 'Vuelo con paradas', '3': 'Vuelo lineal', '4': 'Cicleo' };
@@ -4332,7 +4332,7 @@ function censosAbrirFormObs(num) {
       <div class="campo"><label>Distancia al punto</label>
         <select id="obs-dist-${num}"><option value="">—</option>
           <option value="1">1 — &lt;25 m</option>
-          <option value="2">2 — 25-50 m</option>
+          <option value="2">2 — 25-100 m</option>
           <option value="3">3 — &gt;100 m</option>
         </select>
       </div>

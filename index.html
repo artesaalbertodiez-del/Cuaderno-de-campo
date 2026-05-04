@@ -2141,10 +2141,12 @@ function exportarTodasCSV() {
 }
 
 function borrarTodoHistorial() {
-  if (!confirm('¿Borrar TODAS las visitas del historial? Esta acción no se puede deshacer.')) return;
+  if (!confirm('¿Borrar TODOS los datos del historial (mortandad y censos)? Esta acción no se puede deshacer.')) return;
   localStorage.removeItem('engie_visitas');
+  localStorage.removeItem('engie_censos');
   toast('Historial borrado');
   actualizarMenuContadores();
+  censosActualizarContador();
 }
 
 // Export Word/Excel desde historial (sin estar en el formulario)

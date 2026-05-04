@@ -6,6 +6,25 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
+<script>
+  // Registrar Service Worker para actualizaciones automáticas
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js').then(reg => {
+        // Comprobar actualizaciones cada vez que se abre la app
+        reg.addEventListener('updatefound', () => {
+          const nuevo = reg.installing;
+          nuevo.addEventListener('statechange', () => {
+            if (nuevo.state === 'installed' && navigator.serviceWorker.controller) {
+              // Hay una nueva versión — recargar automáticamente
+              window.location.reload();
+            }
+          });
+        });
+      });
+    });
+  }
+</script>
 <title>Cuaderno de Campo — ENGIE v26</title>
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBnmL9E_YOvPD-4N_jvsqPrl1VlBcuErO8"></script>
 <script src="https://unpkg.com/docx@7.8.2/build/index.js"></script>

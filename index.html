@@ -250,7 +250,15 @@ input[type="file"] { display: none; }
 .menu-section-title { font-size: 11px; color: var(--texto2); text-transform: uppercase; letter-spacing: .08em; font-weight: 700; margin: 18px 0 8px; padding-left: 2px; }
 .menu-section-title:first-child { margin-top: 0; }
 
-/* ── CENSOS ── */
+/* ── AUTOCOMPLETE ESPECIES ── */
+.autocomplete-wrap { position: relative; }
+.autocomplete-input { width: 100%; box-sizing: border-box; }
+.autocomplete-list { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid var(--borde); border-top: none; border-radius: 0 0 8px 8px; max-height: 220px; overflow-y: auto; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,.15); }
+.autocomplete-item { padding: 10px 12px; font-size: 13px; cursor: pointer; border-bottom: 1px solid #f0f0f0; display: flex; flex-direction: column; }
+.autocomplete-item:last-child { border-bottom: none; }
+.autocomplete-item:hover, .autocomplete-item.selected { background: var(--azul-claro); }
+.autocomplete-item .sci { font-size: 11px; color: var(--texto2); font-style: italic; margin-top: 2px; }
+.autocomplete-item strong { color: var(--azul); }
 #pantalla-censos-menu, #pantalla-censos-form { display: none; max-width: 640px; margin: 0 auto; padding: 16px; padding-bottom: 100px; }
 .punto-card { background: white; border: 1px solid var(--borde); border-radius: 10px; margin-bottom: 12px; overflow: hidden; box-shadow: var(--sombra); border-left: 5px solid var(--azul); }
 .punto-card.activo { border-left-color: var(--verde); }
@@ -4312,19 +4320,23 @@ function censosAbrirFormObs(num) {
   const formEl = document.getElementById(`obs-form-${num}`);
   if (!formEl) return;
   formEl.style.display = 'block';
-  const especiesOptions = ESPECIES_AVES.map(([c,s]) =>
-    `<option value="${c}" data-sci="${s}">${c}</option>`).join('');
+
   formEl.innerHTML = `
     <div class="fila f2" style="margin-bottom:10px">
       <div class="campo" style="grid-column:span 2">
         <label>Especie</label>
-        <select id="obs-especie-${num}" onchange="censosAutoSci(${num})">
-          <option value="">— Seleccionar —</option>${especiesOptions}
-        </select>
+        <div class="autocomplete-wrap">
+          <input type="text" id="obs-especie-${num}" class="autocomplete-input"
+            placeholder="Escribir para buscar..."
+            autocomplete="off"
+            oninput="censosAutocomplete(${num})"
+            onkeydown="censosAutocompleteKey(event,${num})">
+          <div class="autocomplete-list" id="obs-ac-list-${num}" style="display:none"></div>
+        </div>
       </div>
       <div class="campo" style="grid-column:span 2">
         <label>Nombre científico</label>
-        <input type="text" id="obs-sci-${num}" placeholder="Se rellena automáticamente" style="font-style:italic">
+        <input type="text" id="obs-sci-${num}" placeholder="Se rellena automáticamente" style="font-style:italic" readonly>
       </div>
     </div>
     <div class="fila f2" style="margin-bottom:10px">
@@ -4382,11 +4394,62 @@ function censosAbrirFormObs(num) {
     </div>`;
 }
 
-function censosAutoSci(num) {
-  const sel = document.getElementById(`obs-especie-${num}`);
-  const opt = sel?.options[sel.selectedIndex];
-  const el = document.getElementById(`obs-sci-${num}`);
-  if (el) el.value = opt?.getAttribute('data-sci') || '';
+// ── Autocompletado de especies ──
+function censosAutocomplete(num) {
+  const input = document.getElementById(`obs-especie-${num}`);
+  const list  = document.getElementById(`obs-ac-list-${num}`);
+  const q = (input?.value || '').toLowerCase().trim();
+
+  if (q.length < 1) { list.style.display = 'none'; return; }
+
+  const matches = ESPECIES_AVES.filter(([c, s]) =>
+    c.toLowerCase().includes(q) || s.toLowerCase().includes(q)
+  ).slice(0, 12);
+
+  if (!matches.length) { list.style.display = 'none'; return; }
+
+  list.innerHTML = matches.map(([c, s], i) => {
+    const hl = (txt) => txt.replace(new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi'), '<strong>$1</strong>');
+    return `<div class="autocomplete-item" data-idx="${i}" data-nom="${c}" data-sci="${s}"
+      onmousedown="censosSelectEspecie(${num},'${c.replace(/'/g,"\\'")}','${s.replace(/'/g,"\\'")}')">
+      <span>${hl(c)}</span>
+      ${s ? `<span class="sci">${hl(s)}</span>` : ''}
+    </div>`;
+  }).join('');
+
+  list.style.display = 'block';
+}
+
+function censosSelectEspecie(num, nombre, cientifico) {
+  const input = document.getElementById(`obs-especie-${num}`);
+  const sci   = document.getElementById(`obs-sci-${num}`);
+  const list  = document.getElementById(`obs-ac-list-${num}`);
+  if (input) input.value = nombre;
+  if (sci)   sci.value   = cientifico;
+  if (list)  list.style.display = 'none';
+}
+
+function censosAutocompleteKey(e, num) {
+  const list = document.getElementById(`obs-ac-list-${num}`);
+  if (!list || list.style.display === 'none') return;
+  const items = list.querySelectorAll('.autocomplete-item');
+  let sel = list.querySelector('.autocomplete-item.selected');
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    const next = sel ? sel.nextElementSibling : items[0];
+    if (sel) sel.classList.remove('selected');
+    if (next) next.classList.add('selected');
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    const prev = sel ? sel.previousElementSibling : items[items.length - 1];
+    if (sel) sel.classList.remove('selected');
+    if (prev) prev.classList.add('selected');
+  } else if (e.key === 'Enter' && sel) {
+    e.preventDefault();
+    censosSelectEspecie(num, sel.dataset.nom, sel.dataset.sci);
+  } else if (e.key === 'Escape') {
+    list.style.display = 'none';
+  }
 }
 
 function censosCerrarFormObs(num) {
@@ -4437,7 +4500,7 @@ function censosEditarObs(num, oi) {
   // Rellenar con los datos existentes
   setTimeout(() => {
     const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
-    setVal(`obs-especie-${num}`, o.especie_comun);
+    setVal(`obs-especie-${num}`, o.especie_comun);  // ahora es input de texto
     setVal(`obs-sci-${num}`, o.especie_cientifico);
     setVal(`obs-n-${num}`, o.n_individuos);
     setVal(`obs-tipo-${num}`, o.tipo_observacion);

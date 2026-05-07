@@ -905,6 +905,67 @@ function autoEspecie(id, nombreComun) {
   actualizarInventario();
 }
 
+function mortAutocomplete(id) {
+  const input = document.getElementById(`especie-input-${id}`);
+  const list  = document.getElementById(`mort-ac-list-${id}`);
+  const q = (input?.value || '').toLowerCase().trim();
+
+  if (q.length < 1) { list.style.display = 'none'; return; }
+
+  const matches = ESPECIES.filter(([c, s]) =>
+    c.toLowerCase().includes(q) || s.toLowerCase().includes(q)
+  ).slice(0, 12);
+
+  if (!matches.length) { list.style.display = 'none'; return; }
+
+  list.innerHTML = matches.map(([c, s]) => {
+    const hl = (txt) => txt.replace(new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi'), '<strong>$1</strong>');
+    return `<div class="autocomplete-item" data-nom="${c}" data-sci="${s}"
+      onmousedown="mortSelectEspecie(${id},'${c.replace(/'/g,"\\'")}','${s.replace(/'/g,"\\'")}')">
+      <span>${hl(c)}</span>
+      ${s ? `<span class="sci">${hl(s)}</span>` : ''}
+    </div>`;
+  }).join('');
+
+  list.style.display = 'block';
+}
+
+function mortSelectEspecie(id, nombre, cientifico) {
+  const input = document.getElementById(`especie-input-${id}`);
+  const sci   = document.getElementById(`cientifico-${id}`);
+  const list  = document.getElementById(`mort-ac-list-${id}`);
+  if (input) input.value = nombre;
+  if (sci)   sci.value   = cientifico;
+  if (list)  list.style.display = 'none';
+  // Actualizar el objeto cadáver
+  const cad = cadaveres.find(c => c.id === id);
+  if (cad) { cad.especie_comun = nombre; cad.especie_cientifico = cientifico; }
+  actualizarInventario();
+}
+
+function mortAutocompleteKey(e, id) {
+  const list = document.getElementById(`mort-ac-list-${id}`);
+  if (!list || list.style.display === 'none') return;
+  const items = list.querySelectorAll('.autocomplete-item');
+  let sel = list.querySelector('.autocomplete-item.selected');
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    const next = sel ? sel.nextElementSibling : items[0];
+    if (sel) sel.classList.remove('selected');
+    if (next) next.classList.add('selected');
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    const prev = sel ? sel.previousElementSibling : items[items.length - 1];
+    if (sel) sel.classList.remove('selected');
+    if (prev) prev.classList.add('selected');
+  } else if (e.key === 'Enter' && sel) {
+    e.preventDefault();
+    mortSelectEspecie(id, sel.dataset.nom, sel.dataset.sci);
+  } else if (e.key === 'Escape') {
+    list.style.display = 'none';
+  }
+}
+
 function getParqueActual() {
   const cod = document.getElementById('parque')?.value;
   return cod ? PARQUES[cod] || null : null;
@@ -1616,13 +1677,19 @@ function renderCadaveres() {
         <div class="subsec">Datos de la especie</div>
         <div class="fila f2">
           <div class="campo"><label>Especie (nombre común)</label>
-            <select data-c="especie_comun" onchange="autoEspecie(${cad.id},this.value)" oninput="actualizarInventario()">
-              <option value="">— Seleccionar —</option>
-              ${ESPECIES.map(([c,s])=>`<option value="${c}"${cad.especie_comun===c?' selected':''}>${c}</option>`).join('')}
-            </select>
+            <div class="autocomplete-wrap">
+              <input type="text" data-c="especie_comun" id="especie-input-${cad.id}"
+                class="autocomplete-input"
+                value="${cad.especie_comun||''}"
+                placeholder="Escribir para buscar..."
+                autocomplete="off"
+                oninput="mortAutocomplete(${cad.id})"
+                onkeydown="mortAutocompleteKey(event,${cad.id})">
+              <div class="autocomplete-list" id="mort-ac-list-${cad.id}" style="display:none"></div>
+            </div>
           </div>
           <div class="campo"><label>Nombre científico</label>
-            <input type="text" data-c="especie_cientifico" id="cientifico-${cad.id}" value="${cad.especie_cientifico||''}" style="font-style:italic" placeholder="Se rellena automáticamente">
+            <input type="text" data-c="especie_cientifico" id="cientifico-${cad.id}" value="${cad.especie_cientifico||''}" style="font-style:italic" placeholder="Se rellena automáticamente" readonly>
           </div>
           <div class="campo"><label>Sexo</label>
             <select data-c="sexo"><option value="">—</option>

@@ -1599,7 +1599,7 @@ function recalcularTodasRefs() {
 }
 
 function agregarCadaver() {
-  // Validar datos generales antes de permitir añadir cadáver
+  // Validar datos generales
   const parque     = document.getElementById('parque')?.value;
   const mes        = document.getElementById('mes')?.value;
   const frecuencia = document.getElementById('frecuencia')?.value;
@@ -1608,6 +1608,32 @@ function agregarCadaver() {
   if (!mes)        { toast('⚠ Selecciona el mes antes de añadir un cadáver'); return; }
   if (!frecuencia) { toast('⚠ Selecciona la frecuencia antes de añadir un cadáver'); return; }
   if (!horaInicio) { toast('⚠ Introduce la hora de inicio antes de añadir un cadáver'); return; }
+
+  // Validar que el cadáver anterior esté completo
+  guardarTodos();
+  if (cadaveres.length > 0) {
+    const ultimo = cadaveres[cadaveres.length - 1];
+    const n = cadaveres.length;
+    if (!ultimo.tiempo_muerte)         { toast(`⚠ Cadáver ${n}: introduce el tiempo estimado desde la muerte`); return; }
+    if (!ultimo.especie_comun)         { toast(`⚠ Cadáver ${n}: selecciona la especie`); return; }
+    if (!ultimo.sexo)                  { toast(`⚠ Cadáver ${n}: selecciona el sexo`); return; }
+    if (!ultimo.edad)                  { toast(`⚠ Cadáver ${n}: selecciona la edad`); return; }
+    if (!ultimo.hora)                  { toast(`⚠ Cadáver ${n}: introduce la hora`); return; }
+    if (!ultimo.aerogenerador)         { toast(`⚠ Cadáver ${n}: selecciona el aerogenerador`); return; }
+    if (!ultimo.habitat)               { toast(`⚠ Cadáver ${n}: selecciona el hábitat`); return; }
+    if (!ultimo.estado_cadaver)        { toast(`⚠ Cadáver ${n}: selecciona el estado del cadáver`); return; }
+    if (!ultimo.estado_descomposicion) { toast(`⚠ Cadáver ${n}: selecciona el estado de descomposición`); return; }
+    if (!ultimo.utmX || !ultimo.utmY)  { toast(`⚠ Cadáver ${n}: introduce las coordenadas UTM`); return; }
+    if (!ultimo.distancia)             { toast(`⚠ Cadáver ${n}: introduce la distancia al aerogenerador`); return; }
+    if (!ultimo.direccion_aero)        { toast(`⚠ Cadáver ${n}: selecciona la dirección del aerogenerador`); return; }
+    if (!ultimo.diagnostico)           { toast(`⚠ Cadáver ${n}: selecciona la causa probable`); return; }
+    if (!ultimo.tamano)                { toast(`⚠ Cadáver ${n}: selecciona el tamaño`); return; }
+    if (!ultimo.descripcion)           { toast(`⚠ Cadáver ${n}: introduce la descripción de los restos`); return; }
+    if (!ultimo.observaciones)         { toast(`⚠ Cadáver ${n}: introduce las observaciones`); return; }
+    if (!ultimo.actuaciones)           { toast(`⚠ Cadáver ${n}: selecciona las actuaciones`); return; }
+    if (!ultimo.infraestructura)       { toast(`⚠ Cadáver ${n}: selecciona la infraestructura`); return; }
+    if (!ultimo.fotos || ultimo.fotos.length < 2) { toast(`⚠ Cadáver ${n}: añade al menos 2 fotografías`); return; }
+  }
 
   const id = nextId++;
   const num = cadaveres.length + 1;
@@ -2069,9 +2095,21 @@ function calcularHashVisita(visita, cadaveres) {
 }
 
 function cerrarVisita() {
-  // Validar campos obligatorios antes de cerrar
-  const horaFin = document.getElementById('hora_fin')?.value;
-  if (!horaFin) { toast('⚠ Introduce la hora de fin antes de cerrar'); return; }
+  // 1. Validar datos generales
+  const parque     = document.getElementById('parque')?.value;
+  const fecha      = document.getElementById('fecha')?.value;
+  const observador = document.getElementById('observador')?.value;
+  const horaInicio = document.getElementById('hora_inicio')?.value;
+  const mes        = document.getElementById('mes')?.value;
+  const frecuencia = document.getElementById('frecuencia')?.value;
+  if (!parque)     { toast('⚠ Selecciona el parque eólico'); return; }
+  if (!fecha)      { toast('⚠ Introduce la fecha'); return; }
+  if (!observador) { toast('⚠ Introduce el observador'); return; }
+  if (!mes)        { toast('⚠ Selecciona el mes'); return; }
+  if (!frecuencia) { toast('⚠ Selecciona la frecuencia'); return; }
+  if (!horaInicio) { toast('⚠ Introduce la hora de inicio'); return; }
+
+  // 2. Validar campos meteorológicos
   const temperatura   = document.getElementById('temperatura')?.value;
   const visibilidad   = document.getElementById('visibilidad')?.value;
   const vientoDirEl   = document.getElementById('viento_dir')?.value;
@@ -2085,30 +2123,35 @@ function cerrarVisita() {
   if (!precipitacion) { toast('⚠ Selecciona la precipitación'); return; }
   if (!nubosidad)     { toast('⚠ Selecciona la nubosidad'); return; }
 
-  // Validar cadáveres en orden
+  // 3. Validar cadáveres en orden
   guardarTodos();
   for (let i = 0; i < cadaveres.length; i++) {
     const c = cadaveres[i];
     const n = i + 1;
-    if (!c.tiempo_muerte)        { toast(`⚠ Cadáver ${n}: introduce el tiempo estimado desde la muerte`); return; }
-    if (!c.especie_comun)        { toast(`⚠ Cadáver ${n}: selecciona la especie`); return; }
-    if (!c.sexo)                 { toast(`⚠ Cadáver ${n}: selecciona el sexo`); return; }
-    if (!c.edad)                 { toast(`⚠ Cadáver ${n}: selecciona la edad`); return; }
-    if (!c.hora)                 { toast(`⚠ Cadáver ${n}: introduce la hora`); return; }
-    if (!c.aerogenerador)        { toast(`⚠ Cadáver ${n}: selecciona el aerogenerador`); return; }
-    if (!c.habitat)              { toast(`⚠ Cadáver ${n}: selecciona el hábitat`); return; }
-    if (!c.estado_cadaver)       { toast(`⚠ Cadáver ${n}: selecciona el estado del cadáver`); return; }
-    if (!c.estado_descomposicion){ toast(`⚠ Cadáver ${n}: selecciona el estado de descomposición`); return; }
-    if (!c.utmX || !c.utmY)     { toast(`⚠ Cadáver ${n}: introduce las coordenadas UTM`); return; }
-    if (!c.distancia)            { toast(`⚠ Cadáver ${n}: introduce la distancia al aerogenerador`); return; }
-    if (!c.direccion_aero)       { toast(`⚠ Cadáver ${n}: selecciona la dirección del aerogenerador`); return; }
-    if (!c.diagnostico)          { toast(`⚠ Cadáver ${n}: selecciona la causa probable`); return; }
-    if (!c.tamano)               { toast(`⚠ Cadáver ${n}: selecciona el tamaño`); return; }
-    if (!c.descripcion)          { toast(`⚠ Cadáver ${n}: introduce la descripción de los restos`); return; }
-    if (!c.actuaciones)          { toast(`⚠ Cadáver ${n}: selecciona las actuaciones`); return; }
-    if (!c.infraestructura)      { toast(`⚠ Cadáver ${n}: selecciona la infraestructura`); return; }
+    if (!c.tiempo_muerte)         { toast(`⚠ Cadáver ${n}: introduce el tiempo estimado desde la muerte`); return; }
+    if (!c.especie_comun)         { toast(`⚠ Cadáver ${n}: selecciona la especie`); return; }
+    if (!c.sexo)                  { toast(`⚠ Cadáver ${n}: selecciona el sexo`); return; }
+    if (!c.edad)                  { toast(`⚠ Cadáver ${n}: selecciona la edad`); return; }
+    if (!c.hora)                  { toast(`⚠ Cadáver ${n}: introduce la hora`); return; }
+    if (!c.aerogenerador)         { toast(`⚠ Cadáver ${n}: selecciona el aerogenerador`); return; }
+    if (!c.habitat)               { toast(`⚠ Cadáver ${n}: selecciona el hábitat`); return; }
+    if (!c.estado_cadaver)        { toast(`⚠ Cadáver ${n}: selecciona el estado del cadáver`); return; }
+    if (!c.estado_descomposicion) { toast(`⚠ Cadáver ${n}: selecciona el estado de descomposición`); return; }
+    if (!c.utmX || !c.utmY)      { toast(`⚠ Cadáver ${n}: introduce las coordenadas UTM`); return; }
+    if (!c.distancia)             { toast(`⚠ Cadáver ${n}: introduce la distancia al aerogenerador`); return; }
+    if (!c.direccion_aero)        { toast(`⚠ Cadáver ${n}: selecciona la dirección del aerogenerador`); return; }
+    if (!c.diagnostico)           { toast(`⚠ Cadáver ${n}: selecciona la causa probable`); return; }
+    if (!c.tamano)                { toast(`⚠ Cadáver ${n}: selecciona el tamaño`); return; }
+    if (!c.descripcion)           { toast(`⚠ Cadáver ${n}: introduce la descripción de los restos`); return; }
+    if (!c.observaciones)         { toast(`⚠ Cadáver ${n}: introduce las observaciones`); return; }
+    if (!c.actuaciones)           { toast(`⚠ Cadáver ${n}: selecciona las actuaciones`); return; }
+    if (!c.infraestructura)       { toast(`⚠ Cadáver ${n}: selecciona la infraestructura`); return; }
     if (!c.fotos || c.fotos.length < 2) { toast(`⚠ Cadáver ${n}: añade al menos 2 fotografías`); return; }
   }
+
+  // 4. Hora fin — lo último
+  const horaFin = document.getElementById('hora_fin')?.value;
+  if (!horaFin) { toast('⚠ Introduce la hora de fin'); return; }
 
   if (!confirm('¿Marcar esta visita como CERRADA?')) return;
   guardarTodos();

@@ -1599,6 +1599,16 @@ function recalcularTodasRefs() {
 }
 
 function agregarCadaver() {
+  // Validar datos generales antes de permitir añadir cadáver
+  const parque     = document.getElementById('parque')?.value;
+  const mes        = document.getElementById('mes')?.value;
+  const frecuencia = document.getElementById('frecuencia')?.value;
+  const horaInicio = document.getElementById('hora_inicio')?.value;
+  if (!parque)     { toast('⚠ Selecciona el parque eólico antes de añadir un cadáver'); return; }
+  if (!mes)        { toast('⚠ Selecciona el mes antes de añadir un cadáver'); return; }
+  if (!frecuencia) { toast('⚠ Selecciona la frecuencia antes de añadir un cadáver'); return; }
+  if (!horaInicio) { toast('⚠ Introduce la hora de inicio antes de añadir un cadáver'); return; }
+
   const id = nextId++;
   const num = cadaveres.length + 1;
   cadaveres.push({ id, num, referencia: generarRef(num), fotos:[], lat:'', lon:'', utmX:'', utmY:'' });
@@ -2075,16 +2085,29 @@ function cerrarVisita() {
   if (!precipitacion) { toast('⚠ Selecciona la precipitación'); return; }
   if (!nubosidad)     { toast('⚠ Selecciona la nubosidad'); return; }
 
-  // Validar cadáveres
+  // Validar cadáveres en orden
   guardarTodos();
   for (let i = 0; i < cadaveres.length; i++) {
     const c = cadaveres[i];
-    const num = i + 1;
-    if (!c.especie_comun)   { toast(`⚠ Cadáver ${num}: selecciona la especie`); return; }
-    if (!c.aerogenerador)   { toast(`⚠ Cadáver ${num}: selecciona el aerogenerador`); return; }
-    if (!c.diagnostico)     { toast(`⚠ Cadáver ${num}: selecciona la causa probable`); return; }
-    if (!c.estado_cadaver)  { toast(`⚠ Cadáver ${num}: selecciona el estado del cadáver`); return; }
-    if (!c.habitat)         { toast(`⚠ Cadáver ${num}: selecciona el hábitat`); return; }
+    const n = i + 1;
+    if (!c.tiempo_muerte)        { toast(`⚠ Cadáver ${n}: introduce el tiempo estimado desde la muerte`); return; }
+    if (!c.especie_comun)        { toast(`⚠ Cadáver ${n}: selecciona la especie`); return; }
+    if (!c.sexo)                 { toast(`⚠ Cadáver ${n}: selecciona el sexo`); return; }
+    if (!c.edad)                 { toast(`⚠ Cadáver ${n}: selecciona la edad`); return; }
+    if (!c.hora)                 { toast(`⚠ Cadáver ${n}: introduce la hora`); return; }
+    if (!c.aerogenerador)        { toast(`⚠ Cadáver ${n}: selecciona el aerogenerador`); return; }
+    if (!c.habitat)              { toast(`⚠ Cadáver ${n}: selecciona el hábitat`); return; }
+    if (!c.estado_cadaver)       { toast(`⚠ Cadáver ${n}: selecciona el estado del cadáver`); return; }
+    if (!c.estado_descomposicion){ toast(`⚠ Cadáver ${n}: selecciona el estado de descomposición`); return; }
+    if (!c.utmX || !c.utmY)     { toast(`⚠ Cadáver ${n}: introduce las coordenadas UTM`); return; }
+    if (!c.distancia)            { toast(`⚠ Cadáver ${n}: introduce la distancia al aerogenerador`); return; }
+    if (!c.direccion_aero)       { toast(`⚠ Cadáver ${n}: selecciona la dirección del aerogenerador`); return; }
+    if (!c.diagnostico)          { toast(`⚠ Cadáver ${n}: selecciona la causa probable`); return; }
+    if (!c.tamano)               { toast(`⚠ Cadáver ${n}: selecciona el tamaño`); return; }
+    if (!c.descripcion)          { toast(`⚠ Cadáver ${n}: introduce la descripción de los restos`); return; }
+    if (!c.actuaciones)          { toast(`⚠ Cadáver ${n}: selecciona las actuaciones`); return; }
+    if (!c.infraestructura)      { toast(`⚠ Cadáver ${n}: selecciona la infraestructura`); return; }
+    if (!c.fotos || c.fotos.length < 2) { toast(`⚠ Cadáver ${n}: añade al menos 2 fotografías`); return; }
   }
 
   if (!confirm('¿Marcar esta visita como CERRADA?')) return;
@@ -4440,6 +4463,12 @@ function censosSetHora(num, valor) {
 }
 
 function censosAbrirFormObs(num) {
+  // Validar hora inicio del punto antes de permitir añadir observación
+  const p = censosPuntos.find(x => x.num === num);
+  if (!p || !p.horaInicio) {
+    toast('⚠ Introduce la hora de inicio del punto antes de añadir observaciones');
+    return;
+  }
   const formEl = document.getElementById(`obs-form-${num}`);
   if (!formEl) return;
   formEl.style.display = 'block';

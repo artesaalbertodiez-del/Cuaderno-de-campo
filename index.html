@@ -2059,6 +2059,34 @@ function calcularHashVisita(visita, cadaveres) {
 }
 
 function cerrarVisita() {
+  // Validar campos obligatorios antes de cerrar
+  const horaFin = document.getElementById('hora_fin')?.value;
+  if (!horaFin) { toast('⚠ Introduce la hora de fin antes de cerrar'); return; }
+  const temperatura   = document.getElementById('temperatura')?.value;
+  const visibilidad   = document.getElementById('visibilidad')?.value;
+  const vientoDirEl   = document.getElementById('viento_dir')?.value;
+  const vientoVelEl   = document.getElementById('viento_vel')?.value;
+  const precipitacion = document.getElementById('precipitacion')?.value;
+  const nubosidad     = document.getElementById('nubosidad')?.value;
+  if (!temperatura)   { toast('⚠ Selecciona la temperatura'); return; }
+  if (!visibilidad)   { toast('⚠ Selecciona la visibilidad'); return; }
+  if (!vientoDirEl)   { toast('⚠ Selecciona la dirección del viento'); return; }
+  if (!vientoVelEl)   { toast('⚠ Selecciona la velocidad del viento'); return; }
+  if (!precipitacion) { toast('⚠ Selecciona la precipitación'); return; }
+  if (!nubosidad)     { toast('⚠ Selecciona la nubosidad'); return; }
+
+  // Validar cadáveres
+  guardarTodos();
+  for (let i = 0; i < cadaveres.length; i++) {
+    const c = cadaveres[i];
+    const num = i + 1;
+    if (!c.especie_comun)   { toast(`⚠ Cadáver ${num}: selecciona la especie`); return; }
+    if (!c.aerogenerador)   { toast(`⚠ Cadáver ${num}: selecciona el aerogenerador`); return; }
+    if (!c.diagnostico)     { toast(`⚠ Cadáver ${num}: selecciona la causa probable`); return; }
+    if (!c.estado_cadaver)  { toast(`⚠ Cadáver ${num}: selecciona el estado del cadáver`); return; }
+    if (!c.habitat)         { toast(`⚠ Cadáver ${num}: selecciona el hábitat`); return; }
+  }
+
   if (!confirm('¿Marcar esta visita como CERRADA?')) return;
   guardarTodos();
   guardarVisitaActual();
@@ -4022,6 +4050,8 @@ function censosGuardarVisita() {
 }
 
 function censosCerrarVisita() {
+  const v = censosGetDatosVisita();
+  if (!v.hora_fin) { toast('⚠ Introduce la hora de fin antes de cerrar'); return; }
   if (!confirm('¿Marcar este censo como CERRADO?')) return;
   censosGuardarVisita();
   let lista = getCensos();
@@ -4034,10 +4064,17 @@ function censosCerrarVisita() {
 
 function censosIniciarPuntos() {
   const v = censosGetDatosVisita();
-  if (!v.parque) { toast('Selecciona un parque'); return; }
-  if (!v.fecha)  { toast('Introduce la fecha'); return; }
+  if (!v.parque)       { toast('⚠ Selecciona un parque'); return; }
+  if (!v.fecha)        { toast('⚠ Introduce la fecha'); return; }
+  if (!v.observador)   { toast('⚠ Introduce el observador'); return; }
+  if (!v.hora_inicio)  { toast('⚠ Introduce la hora de inicio'); return; }
+  if (!v.temperatura)  { toast('⚠ Selecciona la temperatura'); return; }
+  if (!v.visibilidad)  { toast('⚠ Selecciona la visibilidad'); return; }
+  if (!v.viento_dir)   { toast('⚠ Selecciona la dirección del viento'); return; }
+  if (!v.viento_vel)   { toast('⚠ Selecciona la velocidad del viento'); return; }
+  if (!v.precipitacion){ toast('⚠ Selecciona la precipitación'); return; }
+  if (!v.nubosidad)    { toast('⚠ Selecciona la nubosidad'); return; }
   censosGuardarVisita();
-  // Inicializar puntos si es nuevo censo
   if (censosPuntos.length === 0) {
     const nums = PUNTOS_CENSO[v.parque] || [];
     censosPuntos = nums.map(n => ({ num: n, horaInicio: '', observaciones: [] }));
@@ -4544,18 +4581,32 @@ function censosCerrarFormObs(num) {
 }
 
 function censosGuardarObs(num) {
-  const especie = document.getElementById(`obs-especie-${num}`)?.value;
-  if (!especie) { toast('Selecciona una especie'); return; }
+  const especie  = document.getElementById(`obs-especie-${num}`)?.value;
+  const n        = document.getElementById(`obs-n-${num}`)?.value;
+  const tipo     = document.getElementById(`obs-tipo-${num}`)?.value;
+  const distancia= document.getElementById(`obs-dist-${num}`)?.value;
+  const sexo     = document.getElementById(`obs-sexo-${num}`)?.value;
+  const edad     = document.getElementById(`obs-edad-${num}`)?.value;
+  const vuelo    = document.getElementById(`obs-vuelo-${num}`)?.value;
+  const altura   = document.getElementById(`obs-altura-${num}`)?.value;
+  if (!especie)   { toast('⚠ Selecciona una especie'); return; }
+  if (!n)         { toast('⚠ Introduce el nº de individuos'); return; }
+  if (!tipo)      { toast('⚠ Selecciona el tipo de observación'); return; }
+  if (!distancia) { toast('⚠ Selecciona la distancia al punto'); return; }
+  if (!sexo)      { toast('⚠ Selecciona el sexo'); return; }
+  if (!edad)      { toast('⚠ Selecciona la edad'); return; }
+  if (!vuelo)     { toast('⚠ Selecciona el tipo de vuelo'); return; }
+  if (!altura)    { toast('⚠ Selecciona la altura de vuelo'); return; }
   const obs = {
     especie_comun:     especie,
     especie_cientifico:document.getElementById(`obs-sci-${num}`)?.value || '',
-    n_individuos:      document.getElementById(`obs-n-${num}`)?.value || '',
-    tipo_observacion:  document.getElementById(`obs-tipo-${num}`)?.value || '',
-    distancia:         document.getElementById(`obs-dist-${num}`)?.value || '',
-    sexo:              document.getElementById(`obs-sexo-${num}`)?.value || '',
-    edad:              document.getElementById(`obs-edad-${num}`)?.value || '',
-    tipo_vuelo:        document.getElementById(`obs-vuelo-${num}`)?.value || '',
-    altura_vuelo:      document.getElementById(`obs-altura-${num}`)?.value || '',
+    n_individuos:      n,
+    tipo_observacion:  tipo,
+    distancia:         distancia,
+    sexo:              sexo,
+    edad:              edad,
+    tipo_vuelo:        vuelo,
+    altura_vuelo:      altura,
     observaciones:     document.getElementById(`obs-obs-${num}`)?.value || '',
   };
   const p = censosPuntos.find(x => x.num === num);

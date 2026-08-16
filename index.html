@@ -4535,7 +4535,7 @@ function censosAbrirFormObs(num) {
       </div>
     </div>
     <div class="fila f2" style="margin-bottom:10px">
-      <div class="campo"><label>Nº individuos</label><input type="number" id="obs-n-${num}" min="1" placeholder="1"></div>
+      <div class="campo"><label>Nº individuos</label><input type="number" id="obs-n-${num}" min="1" placeholder=""></div>
       <div class="campo"><label>Tipo observación</label>
         <select id="obs-tipo-${num}"><option value="">—</option>
           <option value="Vista">Vista</option><option value="Oída">Oída</option>
@@ -4661,14 +4661,17 @@ function censosGuardarObs(num) {
   const edad     = document.getElementById(`obs-edad-${num}`)?.value;
   const vuelo    = document.getElementById(`obs-vuelo-${num}`)?.value;
   const altura   = document.getElementById(`obs-altura-${num}`)?.value;
-  if (!especie)   { toast('⚠ Selecciona una especie'); return; }
-  if (!n)         { toast('⚠ Introduce el nº de individuos'); return; }
-  if (!tipo)      { toast('⚠ Selecciona el tipo de observación'); return; }
-  if (!distancia) { toast('⚠ Selecciona la distancia al punto'); return; }
-  if (!sexo)      { toast('⚠ Selecciona el sexo'); return; }
-  if (!edad)      { toast('⚠ Selecciona la edad'); return; }
-  if (!vuelo)     { toast('⚠ Selecciona el tipo de vuelo'); return; }
-  if (!altura)    { toast('⚠ Selecciona la altura de vuelo'); return; }
+  if (!especie) { toast('⚠ Selecciona una especie'); return; }
+  // Si es "Sin observaciones" no se validan los demás campos
+  if (especie !== 'Sin observaciones') {
+    if (!n)         { toast('⚠ Introduce el nº de individuos'); return; }
+    if (!tipo)      { toast('⚠ Selecciona el tipo de observación'); return; }
+    if (!distancia) { toast('⚠ Selecciona la distancia al punto'); return; }
+    if (!sexo)      { toast('⚠ Selecciona el sexo'); return; }
+    if (!edad)      { toast('⚠ Selecciona la edad'); return; }
+    if (!vuelo)     { toast('⚠ Selecciona el tipo de vuelo'); return; }
+    if (!altura)    { toast('⚠ Selecciona la altura de vuelo'); return; }
+  }
   const obs = {
     especie_comun:     especie,
     especie_cientifico:document.getElementById(`obs-sci-${num}`)?.value || '',

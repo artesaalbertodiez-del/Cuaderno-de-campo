@@ -4391,9 +4391,21 @@ async function censosSincronizarUno(id) {
     // Upsert datos censo en pestaña del parque
     const filasCensos = [];
     (censo.puntos || []).forEach(p => {
-      p.observaciones.forEach(o => {
+      p.observaciones.forEach((o, obsIdx) => {
+        // Calcular hora con incremento de 1 segundo por observación
+        let horaObs = p.horaInicio || '';
+        if (horaObs && obsIdx > 0) {
+          const [hh, mm] = horaObs.split(':').map(Number);
+          const totalSeg = hh * 3600 + mm * 60 + obsIdx;
+          const hNew = Math.floor(totalSeg / 3600) % 24;
+          const mNew = Math.floor((totalSeg % 3600) / 60);
+          const sNew = totalSeg % 60;
+          horaObs = `${String(hNew).padStart(2,'0')}:${String(mNew).padStart(2,'0')}:${String(sNew).padStart(2,'0')}`;
+        } else if (horaObs) {
+          horaObs = horaObs + ':00'; // primera observación → hora exacta con segundos
+        }
         filasCensos.push([
-          id, v.observador, v.fecha, p.horaInicio, p.num,
+          id, v.observador, v.fecha, horaObs, p.num,
           o.especie_comun, o.n_individuos, o.distancia, o.sexo, o.edad,
           o.tipo_vuelo, o.altura_vuelo, o.observaciones, o.tipo_observacion,
           // Campos nuevos

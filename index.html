@@ -4406,14 +4406,23 @@ async function censosSincronizarUno(id) {
         }
         filasCensos.push([
           id, v.observador, v.fecha, horaObs, p.num,
-          o.especie_comun, o.n_individuos, o.distancia, o.sexo, o.edad,
-          o.tipo_vuelo, o.altura_vuelo, o.observaciones, o.tipo_observacion,
-          // Campos nuevos
-          parqueCenso(p.num),
-          'Punto fijo',
-          distAero(o.distancia),
-          randDir(),
-          // Nombre científico con reglas especiales
+          o.especie_comun,
+          o.n_individuos,
+          // Distancia, Sexo, Edad, Tipo Vuelo, Altura Vuelo → 0 si Sin observaciones
+          o.especie_comun === 'Sin observaciones' ? '0' : o.distancia,
+          o.especie_comun === 'Sin observaciones' ? '0' : o.sexo,
+          o.especie_comun === 'Sin observaciones' ? '0' : o.edad,
+          o.especie_comun === 'Sin observaciones' ? '0' : o.tipo_vuelo,
+          o.especie_comun === 'Sin observaciones' ? '0' : o.altura_vuelo,
+          o.observaciones,
+          // Tipo Observación → vacío si Sin observaciones
+          o.especie_comun === 'Sin observaciones' ? '' : o.tipo_observacion,
+          // Campos calculados → vacío si Sin observaciones
+          o.especie_comun === 'Sin observaciones' ? '' : parqueCenso(p.num),
+          o.especie_comun === 'Sin observaciones' ? '' : 'Punto fijo',
+          o.especie_comun === 'Sin observaciones' ? '' : distAero(o.distancia),
+          o.especie_comun === 'Sin observaciones' ? '' : randDir(),
+          // Nombre científico
           (() => {
             const esp = o.especie_comun || '';
             const sinId = ['Ave grande','Ave mediana','Ave pequeña','Rapaz sin identificar','Paseriforme','Cogujada sp.','Mosquitero sp.'];
@@ -4421,13 +4430,14 @@ async function censosSincronizarUno(id) {
             if (sinId.includes(esp)) return 'Ave sin identificar';
             return o.especie_cientifico || '';
           })(),
-          actividad(o.tipo_vuelo),
-          randDir(),
-          alturaENGIE(o.altura_vuelo),
-          tipoVueloENGIE(o.tipo_vuelo),
-          riesgo(o.tipo_vuelo, o.altura_vuelo),
-          'No',
-          'No'
+          // Actividad, Dirección vuelo, Altura ENGIE, Tipo vuelo ENGIE, Riesgo, Parada, Imagen → vacío si Sin observaciones
+          o.especie_comun === 'Sin observaciones' ? '' : actividad(o.tipo_vuelo),
+          o.especie_comun === 'Sin observaciones' ? '' : randDir(),
+          o.especie_comun === 'Sin observaciones' ? '' : alturaENGIE(o.altura_vuelo),
+          o.especie_comun === 'Sin observaciones' ? '' : tipoVueloENGIE(o.tipo_vuelo),
+          o.especie_comun === 'Sin observaciones' ? '' : riesgo(o.tipo_vuelo, o.altura_vuelo),
+          o.especie_comun === 'Sin observaciones' ? '' : 'No',
+          o.especie_comun === 'Sin observaciones' ? '' : 'No'
         ]);
       });
     });
